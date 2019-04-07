@@ -3,21 +3,27 @@ import numpy as np
 import random as rand
 from numpy.random import random_integers, poisson
 
+from keras.models import Sequential
+from keras.layers import Dense, Flatten
+from keras.layers.embeddings import Embedding
+from keras.layers.recurrent import LSTM
+from keras.preprocessing import sequence
+
 
 class Action:
     """
     A negotiation message.
     """
 
-    def __init__(self, terminate, message, proposal, id=None):
+    def __init__(self, terminate, utterance, proposal, id=None):
         self.proposed_by = id
         if terminate:
             self.terminate = True
-            self.message = None
+            self.utterance = None
             self.proposal = None
         else:
             self.terminate = False
-            self.message = message
+            self.utterance = utterance
             self.proposal = proposal
 
     def is_valid(self, item_pool):
@@ -30,13 +36,13 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_term, lambda_prop, lambda_utt):
+    def __init__(self, lambda_term, lambda_prop, lambda_utt, settings):
         self.id = next(self.id_generator)
         self.lambda_term = lambda_term
         self.lambda_prop = lambda_prop
         self.lambda_utt = lambda_utt
 
-        self.initiate_model()
+        self.initiate_model(settings)
 
     def __str__(self):
         return 'agent {}'.format(self.id)
@@ -46,12 +52,15 @@ class Agent:
         agents = [Agent(*args, **kwargs) for _ in range(n)]
         return agents
 
-    def initiate_model(self):
+    def initiate_model(self, settings):
         """
         Neural network initialization.
         """
-        # self.hidden_state =
-        pass
+        self.model = Sequential()
+        self.model.add(Embedding(settings['vocab_size'], settings['dim_size']))
+        self.model.add(LSTM(100))  # TODO is it also dim_size?
+        self.model.compile(optimizer='adam', loss='mse')
+        
 
     def generate_util_fun(self):
         """
@@ -60,10 +69,11 @@ class Agent:
         while True:
             out = random_integers(0, 10, 3)
             if list(out) != [0, 0, 0]:
-                self.utterance = out
+                self.utilities = out
                 return out
 
     def propose(self, context, utterance, proposal):
+
 
         # hidden_state
         return Action(False, None, None, self.id)
@@ -131,14 +141,15 @@ class Game:
                 proposer, hearer = agent_1, agent_2
             else:
                 proposer, hearer = agent_2, agent_1
+            context = np.concatenate(item_pool, proposer.utilities)
 
-            action = proposer.propose(None, None, None)
+            action = proposer.propose(context, action.utterance, action.proposal)
 
             if action.terminate:
                 # assign rewards
                 if action.is_valid(item_pool):
-                    reward_proposer = np.dot(proposer.utterance, action.proposal)
-                    reward_hearer = np.dot(hearer.utterance, item_pool - action.proposal)
+                    reward_proposer = np.dot(proposer.utilities, action.proposal)
+                    reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
                 else:
                     reward_proposer = 0
                     reward_hearer = 0
@@ -153,8 +164,8 @@ class Game:
             else:
                 proposer, hearer = agent_2, agent_1
 
-            reward_proposer = np.dot(proposer.utterance, action.proposal)
-            reward_hearer = np.dot(hearer.utterance, item_pool - action.proposal)
+            reward_proposer = np.dot(proposer.utilities, action.proposal)
+            reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
 
             proposer.reward(reward_proposer)
             hearer.reward(reward_hearer)
