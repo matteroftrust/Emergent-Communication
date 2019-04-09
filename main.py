@@ -1,4 +1,5 @@
-from library import Agent, Game
+from game import Game
+from agents import Agent
 
 
 LAMBDA_TERM = 0.05  # entropy reguralization weight hyperparameter for termination policy

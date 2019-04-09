@@ -1,13 +1,13 @@
-import itertools
-import numpy as np
-import random as rand
-from numpy.random import random_integers, poisson
-
-from keras.models import Sequential
 from keras.layers import Dense, Flatten
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
+from keras.models import Sequential
 from keras.preprocessing import sequence
+
+from numpy.random import random_integers, poisson
+import itertools
+import numpy as np
+import random as rand
 
 
 class Action:
@@ -30,56 +30,6 @@ class Action:
         if (self.proposal > item_pool).any():
             return False
         return True
-
-
-class Agent:
-
-    id_generator = itertools.count()
-
-    def __init__(self, lambda_term, lambda_prop, lambda_utt, settings):
-        self.id = next(self.id_generator)
-        self.lambda_term = lambda_term
-        self.lambda_prop = lambda_prop
-        self.lambda_utt = lambda_utt
-
-        self.initiate_model(settings)
-
-    def __str__(self):
-        return 'agent {}'.format(self.id)
-
-    @classmethod
-    def create_agents(self, n, *args, **kwargs):
-        agents = [Agent(*args, **kwargs) for _ in range(n)]
-        return agents
-
-    def initiate_model(self, settings):
-        """
-        Neural network initialization.
-        """
-        self.model = Sequential()
-        self.model.add(Embedding(settings['vocab_size'], settings['dim_size']))
-        self.model.add(LSTM(100))  # TODO is it also dim_size?
-        self.model.compile(optimizer='adam', loss='mse')
-        
-
-    def generate_util_fun(self):
-        """
-        Generate utility function which specifies rewards for each item.
-        """
-        while True:
-            out = random_integers(0, 10, 3)
-            if list(out) != [0, 0, 0]:
-                self.utilities = out
-                return out
-
-    def propose(self, context, utterance, proposal):
-
-
-        # hidden_state
-        return Action(False, None, None, self.id)
-
-    def reward(self, reward):
-        pass
 
 
 class Game:
@@ -147,12 +97,8 @@ class Game:
 
             if action.terminate:
                 # assign rewards
-                if action.is_valid(item_pool):
-                    reward_proposer = np.dot(proposer.utilities, action.proposal)
-                    reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
-                else:
-                    reward_proposer = 0
-                    reward_hearer = 0
+                reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
+
 
                 proposer.reward(reward_proposer)
                 hearer.reward(reward_hearer)
@@ -185,3 +131,15 @@ class Game:
         self.negotiations(item_pool)
 
         return True
+
+    def compute_rewards(self, item_pool, action, proposer, hearer):
+        """
+        Method for generating rewards. Might be more clear to convert it to a class.
+        """
+        if action.is_valid(item_pool):
+            reward_proposer = np.dot(proposer.utilities, action.proposal)
+            reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
+        else:
+            reward_proposer = 0
+            reward_hearer = 0
+        return reward_proposer, reward_hearer
