@@ -1,4 +1,4 @@
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, Flatten, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
@@ -19,10 +19,22 @@ class TerminationPolicy(Policy):
     """
     This is a binary decision, and we parametrise πterm as a single feedforward layer,
     with the hidden state as input, followed by a sigmoid function, to represent the probability of termination.
-    """"
-    def __init__():
-        # single feedforward layer
-        # sigmoid function
+    """
+    def __init__(self, dim_size):
+        # single feedforward layer with sigmoid function
+        self.model = Sequential([
+            Dense(1, input_shape=(dim_size,)),
+            Activation('sigmoid')
+        ])
+        self.model.compile(optimizer='adam',
+                           loss='binary_crossentropy',  # TODO these are random, needs to be checked
+                           metrics=['accuracy'])
+
+    def forward(self, hidden_state):
+        confidence = self.model.predict(hidden_state)
+        return confidence >= 0.5
+
+    def train(self):
         pass
 
 
