@@ -2,12 +2,22 @@ from keras.layers import Dense, Flatten, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
-from keras.preprocessing import sequence
+# from keras.preprocessing import sequence
 
 from numpy.random import random_integers, poisson
 import itertools
 import numpy as np
 import random as rand
+
+from game import Action
+
+
+class EmbeddingTable:
+    def __init__(self, input_size, hidden_state_size):
+        self.model = Sequential([Embedding(hidden_state_size, input_shape=(input_size))])
+
+    def embed(self, input):
+        return self.model.predict(input)
 
 
 class Policy:
@@ -20,12 +30,13 @@ class TerminationPolicy(Policy):
     This is a binary decision, and we parametrise πterm as a single feedforward layer,
     with the hidden state as input, followed by a sigmoid function, to represent the probability of termination.
     """
-    def __init__(self, dim_size):
+    def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(1, input_shape=(dim_size,)),
+            Dense(1, input_shape=(hidden_state_size,)),
             Activation('sigmoid')
         ])
+
         self.model.compile(optimizer='adam',
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
@@ -45,7 +56,20 @@ class UtterancePolicy(Policy):
     subsequently, the model prediction from the previous timestep is fed in as input at the next timestep,
     in order to predict the next symbol
     """
-    pass
+    def __init__(self, hidden_state_size, entropy_reg=0.001):
+        self.model = Sequential([
+            LSTM(100, input_shape=(hidden_state_size,))
+        ])
+        self.model.compile(optimizer='adam',
+                           loss='mse',  # TODO these are random, needs to be checked
+                           metrics=['accuracy'])
+
+    def forward(self, hidden_state):
+        utterance = self.model.predict(hidden_state)
+        return utterance
+
+    def train(self):
+        pass
 
 
 class ProposalPolicy(Policy):
@@ -53,25 +77,43 @@ class ProposalPolicy(Policy):
     This is parametrised by 3 separate feedforward neural networks, one for each item type,
     which each take as input ht and output a distribution over {0...5} indicating the proposal for that item
     """
-    pass
+    def __init__(self, hidden_state_size, item_num=3, entropy_reg=0.05):
+        self.item_num = item_num
+        self.models = []
+        for _ in range(self.item_num):
+            model = Sequential([
+                LSTM(100, input_shape=(hidden_state_size,))
+            ])
+            self.model.compile(optimizer='adam',
+                               loss='mse',  # TODO these are random, needs to be checked
+                               metrics=['accuracy'])
+            self.models.append(model)
+
+    def forward(self, hidden_state):
+        proposal = []
+        for i in range(self.item_num):
+            single_proposal = self.models[i].predict(hidden_state)
+            proposal.append(single_proposal)
+        return proposal
+
+    def train(self):
+        pass
 
 
 class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_term, lambda_prop, lambda_utt, settings):
+    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size):
         self.id = next(self.id_generator)
         self.lambda_term = lambda_term
         self.lambda_prop = lambda_prop
         self.lambda_utt = lambda_utt
 
         # policies
-        self.term_policy = TerminationPolicy()
-        self.utter_policy = UtterancePolicy()
-        self.prop_policy = ProposalPolicy()
-
-        self.initiate_model(settings)
+        self.term_policy = TerminationPolicy(hidden_state_size)
+        self.utter_policy = UtterancePolicy(hidden_state_size)
+        self.prop_policy = ProposalPolicy(hidden_state_size)
 
     def __str__(self):
         return 'agent {}'.format(self.id)
@@ -80,15 +122,6 @@ class Agent:
     def create_agents(self, n, *args, **kwargs):
         agents = [Agent(*args, **kwargs) for _ in range(n)]
         return agents
-
-    def initiate_model(self, settings):
-        """
-        Neural network initialization.
-        """
-        self.model = Sequential()
-        self.model.add(Embedding(settings['vocab_size'], settings['dim_size']))
-        self.model.add(LSTM(100))  # TODO is it also dim_size?
-        self.model.compile(optimizer='adam', loss='mse')
 
     def generate_util_fun(self):
         """
