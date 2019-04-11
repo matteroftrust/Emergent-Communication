@@ -58,7 +58,7 @@ class UtterancePolicy(Policy):
     """
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
-            LSTM(100, input_shape=(hidden_state_size,))
+            LSTM(100, input_shape=(hidden_state_size, 1))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
@@ -82,11 +82,11 @@ class ProposalPolicy(Policy):
         self.models = []
         for _ in range(self.item_num):
             model = Sequential([
-                LSTM(100, input_shape=(hidden_state_size,))
+                LSTM(100, input_shape=(hidden_state_size, 1))
             ])
-            self.model.compile(optimizer='adam',
-                               loss='mse',  # TODO these are random, needs to be checked
-                               metrics=['accuracy'])
+            model.compile(optimizer='adam',
+                          loss='mse',  # TODO these are random, needs to be checked
+                          metrics=['accuracy'])
             self.models.append(model)
 
     def forward(self, hidden_state):
@@ -136,7 +136,7 @@ class Agent:
     def propose(self, context, utterance, proposal):
 
         # hidden_state
-        return Action(False, None, None, self.id)
+        return Action(False, np.zeros(10), np.zeros(3), self.id)
 
     def reward(self, reward):
         pass
