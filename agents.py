@@ -1,13 +1,12 @@
-from keras.layers import Dense, Flatten, Activation
+from keras.layers import Dense, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 # from keras.preprocessing import sequence
 
-from numpy.random import random_integers, poisson
+from numpy.random import random_integers
 import itertools
 import numpy as np
-import random as rand
 
 from game import Action
 

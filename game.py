@@ -1,14 +1,5 @@
-from keras.layers import Dense, Flatten
-from keras.layers.embeddings import Embedding
-from keras.layers.recurrent import LSTM
-from keras.models import Sequential
-from keras.preprocessing import sequence
-
-from numpy.random import random_integers, poisson
-import itertools
 import numpy as np
-# import random as rand
-
+from numpy.random import random_integers
 from utils import generate_item_pool, generate_negotiation_time
 
 
@@ -22,7 +13,6 @@ class Action:
         self.terminate = terminate
         self.utterance = utterance
         self.proposal = proposal
-        print('action', self.terminate, self.utterance, self.proposal)
 
     def is_valid(self, item_pool):
         if (self.proposal > item_pool).any():
@@ -63,6 +53,7 @@ class Game:
         agent_2 = self.agents[1 - rand_0_or_1]
 
         for t in range(n):
+            print('Round {} out of {}'.format(t, n))
             if t % 2:  # agents alter their roles
                 proposer, hearer = agent_1, agent_2
             else:
@@ -77,21 +68,18 @@ class Game:
 
                 proposer.reward(reward_proposer)
                 hearer.reward(reward_hearer)
-                return
+                break
 
             # assign rewards based on last proposal if agents don't get to any agreement
             if agent_1.id == action.proposed_by:
                 proposer, hearer = agent_1, agent_2
             else:
                 proposer, hearer = agent_2, agent_1
-            print('what is here', proposer.utilities, action.proposal)
             reward_proposer = np.dot(proposer.utilities, action.proposal)
             reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
 
             proposer.reward(reward_proposer)
             hearer.reward(reward_hearer)
-
-            return
 
     def next_round(self):
 
