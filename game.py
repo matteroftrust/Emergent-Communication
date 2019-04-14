@@ -22,8 +22,7 @@ class Action:
 
 class Game:
 
-    def __init__(self, end, agents, settings, item_num=3, utter_len=10):
-        self.end = end
+    def __init__(self, agents, batch_size, episode_num, item_num=3, utter_len=10):
         self.rounds = []
         self.i = 0
         self.agents = agents  # list of agents
@@ -32,18 +31,19 @@ class Game:
 
         self.item_num = item_num
         self.utter_len = utter_len
+        self.batch_size = batch_size
+        self.episode_num = episode_num
         # we might need something like this here:
-        self.settings = {
-            'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
-        }
+        # self.settings = {
+        #     'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
+        # }
 
     def play(self):
-        while True:
-            print('### Starting round {} out of {} ###'.format(self.i, self.end))
-            self.i += 1
-            out = self.next_round()
-            if not out:
-                break
+        for i in range(self.episode_num):
+            print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
+            batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
+
+            self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
     def negotiations(self, item_pool, n):
         action = Action(False, np.zeros(self.utter_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
@@ -81,21 +81,23 @@ class Game:
             proposer.reward(reward_proposer)
             hearer.reward(reward_hearer)
 
-    def next_round(self):
+    def next_episode(self):
+        batch_item_pool = []
+        batch_negotiations = []
+        batch_rewards = []
+        for i in range(self.batch_size):
 
-        if self.i == self.end:
-            print('End of the game.')
-            return False
+            # beginning of new round. item pool and utility funcions generation
+            item_pool = generate_item_pool()
+            negotiation_time = generate_negotiation_time()
+            for agent in self.agents:
+                agent.generate_util_fun()
 
-        # beginning of new round. item pool and utility funcions generation
-        item_pool = generate_item_pool()
-        negotiation_time = generate_negotiation_time()
-        for agent in self.agents:
-            agent.generate_util_fun()
+            self.negotiations(item_pool, negotiation_time)
 
-        self.negotiations(item_pool, negotiation_time)
+            # remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
-        return True
+        return batch_item_pool, batch_negotiations, batch_rewards
 
     def compute_rewards(self, item_pool, action, proposer, hearer):
         """
@@ -108,3 +110,6 @@ class Game:
             reward_proposer = 0
             reward_hearer = 0
         return reward_proposer, reward_hearer
+
+    def reinforce(self, batch_item_pool, batch_negotiations, batch_rewards):
+        pass

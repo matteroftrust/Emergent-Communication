@@ -103,7 +103,7 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size):
+    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size, vocab_size, dim_size):
         self.id = next(self.id_generator)
         self.lambda_term = lambda_term
         self.lambda_prop = lambda_prop
