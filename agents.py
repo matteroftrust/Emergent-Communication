@@ -13,7 +13,7 @@ from game import Action
 
 class EmbeddingTable:
     def __init__(self, input_size, hidden_state_size):
-        self.model = Sequential([Embedding(hidden_state_size, input_shape=(input_size))])
+        self.model = Sequential([Embedding(input_dim=input_size, output_dim=hidden_state_size)])
 
     def embed(self, input):
         return self.model.predict(input)
@@ -103,7 +103,7 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size, vocab_size, dim_size):
+    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size, vocab_size, dim_size, utter_len):
         self.id = next(self.id_generator)
         self.lambda_term = lambda_term
         self.lambda_prop = lambda_prop
@@ -113,6 +113,9 @@ class Agent:
         self.term_policy = TerminationPolicy(hidden_state_size)
         self.utter_policy = UtterancePolicy(hidden_state_size)
         self.prop_policy = ProposalPolicy(hidden_state_size)
+
+        self.utter_len = utter_len
+        self.vocab_size = vocab_size
 
     def __str__(self):
         return 'agent {}'.format(self.id)

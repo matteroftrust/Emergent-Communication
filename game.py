@@ -22,7 +22,7 @@ class Action:
 
 class Game:
 
-    def __init__(self, agents, batch_size, episode_num, item_num=3, utter_len=10):
+    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3):
         self.rounds = []
         self.i = 0
         self.agents = agents  # list of agents
@@ -30,8 +30,8 @@ class Game:
         self.scores = np.zeros(len(self.agents))
 
         self.item_num = item_num
-        self.utter_len = utter_len
         self.batch_size = batch_size
+        self.test_batch_size = test_batch_size
         self.episode_num = episode_num
         # we might need something like this here:
         # self.settings = {
@@ -40,13 +40,17 @@ class Game:
 
     def play(self):
         for i in range(self.episode_num):
+
+            if i % 50:
+                self.tests()
+
             print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
             batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
 
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
     def negotiations(self, item_pool, n):
-        action = Action(False, np.zeros(self.utter_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
+        action = Action(False, np.zeros(self.agents[0].utter_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
         agent_1 = self.agents[rand_0_or_1]
@@ -110,6 +114,9 @@ class Game:
             reward_proposer = 0
             reward_hearer = 0
         return reward_proposer, reward_hearer
+
+    def tests(self):
+        pass
 
     def reinforce(self, batch_item_pool, batch_negotiations, batch_rewards):
         pass
