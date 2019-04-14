@@ -11,11 +11,17 @@ import numpy as np
 from game import Action
 
 
-class EmbeddingTable:
-    def __init__(self, input_size, hidden_state_size):
-        self.model = Sequential([Embedding(input_dim=input_size, output_dim=hidden_state_size)])
+class NumberSequenceEncoder:
+    def __init__(self, input_dim, output_dim):
+        """
+        item_dim is a number of different values that can occur as unput. I.e. for utterance input_dim=vocab_size.
+        """
+        self.model = Sequential([
+            Embedding(input_dim=input_dim, output_dim=output_dim),
+            LSTM(100)
+        ])
 
-    def embed(self, input):
+    def encode(self, input):
         return self.model.predict(input)
 
 
@@ -117,9 +123,10 @@ class Agent:
         self.utterance_len = utterance_len
         self.vocab_size = vocab_size
 
-        self.context_embed = EmbeddingTable()
-        self.proposal_embed = EmbeddingTable()
-        self.utterance_embed = EmbeddingTable()
+        # NumberSequenceEncoders
+        self.context_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
+        self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
 
     def __str__(self):
         return 'agent {}'.format(self.id)
