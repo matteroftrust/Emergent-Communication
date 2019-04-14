@@ -4,12 +4,12 @@ from agents import Agent
 if __name__ == '__main__':
 
     AGENT_SETTINGS = {
-        'lambda_term': 0.05,  # entropy reguralization weight hyperparameter for termination policy
-        'lambda_prop': 0.05,  # entropy reguralization weight hyperparameter for proposal policy
-        'lambda_utt': 0.001,  # entropy reguralization weight hyperparameter for linguistic utterance policy
+        'lambda_termination': 0.05,  # entropy reguralization weight hyperparameter for termination policy
+        'lambda_proposal': 0.05,  # entropy reguralization weight hyperparameter for proposal policy
+        'lambda_utterance': 0.001,  # entropy reguralization weight hyperparameter for linguistic utterance policy
         'hidden_state_size': 100,
         'vocab_size': 11,
-        'utter_len': 6,
+        'utterance_len': 6,
         'dim_size': 100
     }
 

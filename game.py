@@ -50,7 +50,7 @@ class Game:
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
     def negotiations(self, item_pool, n):
-        action = Action(False, np.zeros(self.agents[0].utter_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
+        action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
         agent_1 = self.agents[rand_0_or_1]

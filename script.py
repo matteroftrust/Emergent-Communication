@@ -20,9 +20,9 @@ item_context = np.array([6, 2, 1, 2, 4, 2, 1, 3, 5])
 VOCAB_SIZE = 11
 DIM_SIZE = 100
 MAX_LENGTH = 6  # maximal allowed length of produced utterances
-LAMBDA_TERM = 0.05  # entropy reguralization weight hyperparameter for termination policy
-LAMBDA_PROP = 0.05  # entropy reguralization weight hyperparameter for proposal policy
-LAMBDA_UTT = 0.001  # entropy reguralization weight hyperparameter for linguistic utterance policy
+lambda_termination = 0.05  # entropy reguralization weight hyperparameter for termination policy
+lambda_proposal = 0.05  # entropy reguralization weight hyperparameter for proposal policy
+lambda_utterance = 0.001  # entropy reguralization weight hyperparameter for linguistic utterance policy
 SMOOTHING_CONST = 0.7
 
 model = Sequential()

@@ -103,19 +103,23 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_term, lambda_prop, lambda_utt, hidden_state_size, vocab_size, dim_size, utter_len):
+    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size, dim_size, utterance_len):
         self.id = next(self.id_generator)
-        self.lambda_term = lambda_term
-        self.lambda_prop = lambda_prop
-        self.lambda_utt = lambda_utt
+        self.lambda_termination = lambda_termination
+        self.lambda_proposal = lambda_proposal
+        self.lambda_utterance = lambda_utterance
 
         # policies
-        self.term_policy = TerminationPolicy(hidden_state_size)
-        self.utter_policy = UtterancePolicy(hidden_state_size)
-        self.prop_policy = ProposalPolicy(hidden_state_size)
+        self.termination_policy = TerminationPolicy(hidden_state_size)
+        self.utterance_policy = UtterancePolicy(hidden_state_size)
+        self.proposal_policy = ProposalPolicy(hidden_state_size)
 
-        self.utter_len = utter_len
+        self.utterance_len = utterance_len
         self.vocab_size = vocab_size
+
+        self.context_embed = EmbeddingTable()
+        self.proposal_embed = EmbeddingTable()
+        self.utterance_embed = EmbeddingTable()
 
     def __str__(self):
         return 'agent {}'.format(self.id)
