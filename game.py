@@ -42,7 +42,7 @@ class Game:
         for i in range(self.episode_num):
 
             if i % 50:
-                self.tests()
+                self.tests()  # experiment statistics
 
             print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
             batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
@@ -79,11 +79,14 @@ class Game:
                 proposer, hearer = agent_1, agent_2
             else:
                 proposer, hearer = agent_2, agent_1
+            # TODO what is it in the next line? should be removed?
             reward_proposer = np.dot(proposer.utilities, action.proposal)
             reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
 
             proposer.reward(reward_proposer)
             hearer.reward(reward_hearer)
+        # TODO both get reward of zero
+
 
     def next_episode(self):
         batch_item_pool = []
