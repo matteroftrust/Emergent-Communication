@@ -109,8 +109,11 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size, dim_size, utterance_len):
+    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size, dim_size, utterance_len, discount_factor, learning_rate):
         self.id = next(self.id_generator)
+        self.discount_factor = discount_factor
+        self.learning_rate = learning_rate
+
         self.lambda_termination = lambda_termination
         self.lambda_proposal = lambda_proposal
         self.lambda_utterance = lambda_utterance
@@ -153,3 +156,15 @@ class Agent:
 
     def reward(self, reward):
         pass
+
+    #Discounting rewards collected in an episode. 
+    #e.g discount_factor = 0.99 then [1, 1, 1, 1] -> [3.94, 2.97, 1.99, 1.0]
+    #line 5 https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
+    #line 61 https://github.com/rlcode/reinforcement-learning/blob/master/2-cartpole/3-reinforce/cartpole_reinforce.py
+    def discount_rewards(self, rewards):
+        discounted_rewards = np.zeros_like(rewards)
+        running_add = 0
+        for t in reversed(range(0, len(rewards))):
+            running_add = running_add * self.discount_factor + rewards[t]
+            discounted_rewards[t] = running_add
+        return discounted_rewards
