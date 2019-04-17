@@ -10,7 +10,9 @@ if __name__ == '__main__':
         'hidden_state_size': 100,
         'vocab_size': 11,
         'utterance_len': 6,
-        'dim_size': 100
+        'dim_size': 100,
+        'discount_factor' = 0.99,
+        'learning_rate' = 0.001
     }
 
     GAME_SETTINGS = {
