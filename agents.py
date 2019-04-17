@@ -29,7 +29,6 @@ class Policy:
     def __init__(self, settings):
         pass
 
-
 class TerminationPolicy(Policy):
     """
     This is a binary decision, and we parametrise πterm as a single feedforward layer,
@@ -109,8 +108,11 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size, dim_size, utterance_len):
+    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size, dim_size, utterance_len, discount_factor, learning_rate):
         self.id = next(self.id_generator)
+        self.discount_factor = discount_factor
+        self.learning_rate = learning_rate
+
         self.lambda_termination = lambda_termination
         self.lambda_proposal = lambda_proposal
         self.lambda_utterance = lambda_utterance
@@ -127,6 +129,8 @@ class Agent:
         self.context_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
         self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
+
+        
 
     def __str__(self):
         return 'agent {}'.format(self.id)
@@ -149,7 +153,32 @@ class Agent:
     def propose(self, context, utterance, proposal):
 
         # hidden_state
+        proposal_triple = np.concatenate((context, utterance,proposal))
+        proposal_triple_size = len(proposal_triple)
+
+        #Maybe the model initiation can be moved to constructor / outside this function, to avoid model loading times at each function call?
+
+        #I think output size should be 100 instead of 1, because it is fed into NNs and LSTMs.
+        model = Sequential([Dense(100, input_shape=(proposal_triple_size,)),
+            Activation('relu')])
+
+        hidden_state = model.fit(proposal_triple)
+
+        #I will stop here, because I am not sure whether you were planning to return the hidden state or also use the policies here ;)
+
         return Action(False, np.zeros(10), np.zeros(3), self.id)
 
     def reward(self, reward):
         pass
+
+    #Discounting rewards collected in an episode. 
+    #e.g discount_factor = 0.99 then [1, 1, 1, 1] -> [3.94, 2.97, 1.99, 1.0]
+    #line 5 https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
+    #line 61 https://github.com/rlcode/reinforcement-learning/blob/master/2-cartpole/3-reinforce/cartpole_reinforce.py
+    def discount_rewards(self, rewards):
+        discounted_rewards = np.zeros_like(rewards)
+        running_add = 0
+        for t in reversed(range(0, len(rewards))):
+            running_add = running_add * self.discount_factor + rewards[t]
+            discounted_rewards[t] = running_add
+        return discounted_rewards
