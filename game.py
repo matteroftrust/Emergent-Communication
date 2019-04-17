@@ -53,40 +53,25 @@ class Game:
         action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
-        agent_1 = self.agents[rand_0_or_1]
-        agent_2 = self.agents[1 - rand_0_or_1]
+        proposer = self.agents[rand_0_or_1]
+        hearer = self.agents[1 - rand_0_or_1]
+        negotiations = []
 
         for t in range(n):
             print('Round {} out of {}'.format(t, n))
-            if t % 2:  # agents alter their roles
-                proposer, hearer = agent_1, agent_2
-            else:
-                proposer, hearer = agent_2, agent_1
+            proposer, hearer = hearer, proposer, hearer  # each negotiation round agents switch roles
 
             context = np.concatenate((item_pool, proposer.utilities))
             action = proposer.propose(context, action.utterance, action.proposal)
 
-            if action.terminate:
-                # assign rewards
-                reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
+            if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
+                break  # if terminate then negotiations are over
 
-                proposer.reward(reward_proposer)
-                hearer.reward(reward_hearer)
-                break
-
-            # assign rewards based on last proposal if agents don't get to any agreement
-            if agent_1.id == action.proposed_by:
-                proposer, hearer = agent_1, agent_2
-            else:
-                proposer, hearer = agent_2, agent_1
-            # TODO what is it in the next line? should be removed?
-            reward_proposer = np.dot(proposer.utilities, action.proposal)
-            reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
-
-            proposer.reward(reward_proposer)
-            hearer.reward(reward_hearer)
-        # TODO both get reward of zero
-
+        # assign rewards
+        reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
+        proposer.reward(reward_proposer)
+        hearer.reward(reward_hearer)
+        return item_pool, negotiations, [reward_proposer, reward_hearer]
 
     def next_episode(self):
         batch_item_pool = []
@@ -100,7 +85,7 @@ class Game:
             for agent in self.agents:
                 agent.generate_util_fun()
 
-            self.negotiations(item_pool, negotiation_time)
+            item_pool, negotations, rewards = self.negotiations(item_pool, negotiation_time)
 
             # remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
@@ -110,7 +95,7 @@ class Game:
         """
         Method for generating rewards. Might be more clear to convert it to a class.
         """
-        if action.is_valid(item_pool):
+        if action.is_valid(item_pool) or not action.terminate:  # if proposal is valid and terminated
             reward_proposer = np.dot(proposer.utilities, action.proposal)
             reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
         else:

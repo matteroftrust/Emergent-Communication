@@ -12,13 +12,13 @@ from game import Action
 
 
 class NumberSequenceEncoder:
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, hidden_state_size=100):
         """
         item_dim is a number of different values that can occur as unput. I.e. for utterance input_dim=vocab_size.
         """
         self.model = Sequential([
             Embedding(input_dim=input_dim, output_dim=output_dim),
-            LSTM(100)
+            LSTM(hidden_state_size)
         ])
 
     def encode(self, input):
