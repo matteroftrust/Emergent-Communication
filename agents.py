@@ -29,7 +29,6 @@ class Policy:
     def __init__(self, settings):
         pass
 
-
 class TerminationPolicy(Policy):
     """
     This is a binary decision, and we parametrise πterm as a single feedforward layer,
@@ -131,6 +130,8 @@ class Agent:
         self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
 
+        
+
     def __str__(self):
         return 'agent {}'.format(self.id)
 
@@ -152,6 +153,19 @@ class Agent:
     def propose(self, context, utterance, proposal):
 
         # hidden_state
+        proposal_triple = np.concatenate((context, utterance,proposal))
+        proposal_triple_size = len(proposal_triple)
+
+        #Maybe the model initiation can be moved to constructor / outside this function, to avoid model loading times at each function call?
+
+        #I think output size should be 100 instead of 1, because it is fed into NNs and LSTMs.
+        model = Sequential([Dense(100, input_shape=(proposal_triple_size,)),
+            Activation('relu')])
+
+        hidden_state = model.fit(proposal_triple)
+
+        #I will stop here, because I am not sure whether you were planning to return the hidden state or also use the policies here ;)
+
         return Action(False, np.zeros(10), np.zeros(3), self.id)
 
     def reward(self, reward):
