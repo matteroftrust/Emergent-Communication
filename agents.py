@@ -21,12 +21,18 @@ class NumberSequenceEncoder:
             LSTM(hidden_state_size)
         ])
 
+    def __call__(self, input):
+        return self.encode(input)
+
     def encode(self, input):
         return self.model.predict(input)
 
 
 class Policy:
-    def __init__(self, settings):
+    def __call__(self, *args, **kwargs):
+        self.forward(*args, **kwargs)
+
+    def forward(*args, **kwargs):
         pass
 
 
@@ -63,7 +69,7 @@ class UtterancePolicy(Policy):
     """
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
-            LSTM(100, input_shape=(hidden_state_size, 1))
+            LSTM(100, input_shape=(15,))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
@@ -129,9 +135,17 @@ class Agent:
         self.vocab_size = vocab_size
 
         # NumberSequenceEncoders
-        self.context_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
-        self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
+        self.context_encoder = NumberSequenceEncoder(input_dim=11, output_dim=hidden_state_size)  # is this correct?
+        # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
+
+        # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
+        core_layer_shape = (100,)
+        self.core_layer_model = Sequential([
+            Dense(hidden_state_size, input_shape=core_layer_shape),
+            Activation('relu'),
+        ])
+        self.core_layer = self.core_layer_model.predict
 
     def __str__(self):
         return 'agent {}'.format(self.id)
@@ -152,18 +166,22 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal):
+        h_c, h_m, h_p = self.context_encoder(context), self.context_encoder(utterance), self.context_encoder(proposal)
+        hidden_state = self.core_layer(np.concatenate([h_c, h_m, h_p]))
+        termination = self.termination_policy(hidden_state)
+        utterance = self.utterance_policy(hidden_state)
+        proposal = self.proposal_policy(hidden_state)
 
-        # hidden_state
-        proposal_triple = np.concatenate((context, utterance, proposal))
-        proposal_triple_size = len(proposal_triple)
+        action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
 
+        return action
         # Maybe the model initiation can be moved to constructor / outside this function, to avoid model loading times at each function call?
 
         # I think output size should be 100 instead of 1, because it is fed into NNs and LSTMs.
-        model = Sequential([Dense(100, input_shape=(proposal_triple_size,)),
-                            Activation('relu')]
-                           )
-        hidden_state = model.fit(proposal_triple)
+        # model = Sequential([Dense(100, input_shape=(proposal_triple_size,)),
+        #                     Activation('relu')]
+        #                    )
+        # hidden_state = model.fit(proposal_triple)
 
         # I will stop here, because I am not sure whether you were planning to return the hidden state or also use the policies here ;)
 

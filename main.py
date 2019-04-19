@@ -9,8 +9,8 @@ AGENT_SETTINGS = {
     'vocab_size': 11,
     'utterance_len': 6,
     'dim_size': 100,
-    'discount_factor' = 0.99,
-    'learning_rate' = 0.001
+    'discount_factor': 0.99,
+    'learning_rate': 0.001
 }
 GAME_SETTINGS = {
     # 'linguistic_channel': True,

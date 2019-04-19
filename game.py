@@ -49,30 +49,6 @@ class Game:
 
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
-    def negotiations(self, item_pool, n):
-        action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
-        # should it be chosen randomly?
-        rand_0_or_1 = random_integers(0, 1)
-        proposer = self.agents[rand_0_or_1]
-        hearer = self.agents[1 - rand_0_or_1]
-        negotiations = []
-
-        for t in range(n):
-            print('Round {} out of {}'.format(t, n))
-            proposer, hearer = hearer, proposer, hearer  # each negotiation round agents switch roles
-
-            context = np.concatenate((item_pool, proposer.utilities))
-            action = proposer.propose(context, action.utterance, action.proposal)
-
-            if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
-                break  # if terminate then negotiations are over
-
-        # assign rewards
-        reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
-        proposer.reward(reward_proposer)
-        hearer.reward(reward_hearer)
-        return item_pool, negotiations, [reward_proposer, reward_hearer]
-
     def next_episode(self):
         batch_item_pool = []
         batch_negotiations = []
@@ -85,11 +61,36 @@ class Game:
             for agent in self.agents:
                 agent.generate_util_fun()
 
-            item_pool, negotations, rewards = self.negotiations(item_pool, negotiation_time)
-
+            item_pool, negotiations, rewards = self.negotiations(item_pool, negotiation_time)
+            batch_item_pool.append(item_pool)
+            batch_negotiations.append(negotiations)
+            batch_rewards.append(rewards)
             # remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
         return batch_item_pool, batch_negotiations, batch_rewards
+
+    def negotiations(self, item_pool, n):
+        action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
+        # should it be chosen randomly?
+        rand_0_or_1 = random_integers(0, 1)
+        proposer = self.agents[rand_0_or_1]
+        hearer = self.agents[1 - rand_0_or_1]
+        negotiations = []
+
+        for t in range(n):
+            proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
+
+            context = np.concatenate((item_pool, proposer.utilities))
+            action = proposer.propose(context, action.utterance, action.proposal)
+
+            if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
+                break  # if terminate then negotiations are over
+
+        # assign rewards
+        reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
+        proposer.reward(reward_proposer)
+        hearer.reward(reward_hearer)
+        return item_pool, negotiations, [reward_proposer, reward_hearer]
 
     def compute_rewards(self, item_pool, action, proposer, hearer):
         """
