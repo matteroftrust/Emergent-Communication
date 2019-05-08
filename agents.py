@@ -2,6 +2,7 @@ from keras.layers import Dense, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
+from keras.activations import sigmoid
 # from keras.preprocessing import sequence
 
 from numpy.random import random_integers
@@ -30,7 +31,7 @@ class NumberSequenceEncoder:
 
 class Policy:
     def __call__(self, *args, **kwargs):
-        self.forward(*args, **kwargs)
+        return self.forward(*args, **kwargs)
 
     def forward(*args, **kwargs):
         pass
@@ -44,9 +45,11 @@ class TerminationPolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(1, input_shape=(hidden_state_size,)),
+            Dense(1, input_shape=(hidden_state_size, 1)),
+            # sigmoid()
             Activation('sigmoid')
         ])
+        # takes (batch_size, hidden_state_size) vectors as input
 
         self.model.compile(optimizer='adam',
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
@@ -54,6 +57,8 @@ class TerminationPolicy(Policy):
 
     def forward(self, hidden_state):
         confidence = self.model.predict(hidden_state)
+        print('this is confidence:', confidence.shape)
+        confidence = np.mean(confidence)  # TODO this is completely wrong, I know
         return confidence >= 0.5
 
     def train(self):
@@ -69,7 +74,8 @@ class UtterancePolicy(Policy):
     """
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
-            LSTM(100, input_shape=(15,))
+            # LSTM(100, input_shape=(15,))
+            LSTM(100, input_shape=(hidden_state_size, 1))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
@@ -93,7 +99,7 @@ class ProposalPolicy(Policy):
         self.models = []
         for _ in range(self.item_num):
             model = Sequential([
-                LSTM(100, input_shape=(hidden_state_size, 1))
+                LSTM(1, input_shape=(hidden_state_size, 1))
             ])
             model.compile(optimizer='adam',
                           loss='mse',  # TODO these are random, needs to be checked
@@ -104,8 +110,9 @@ class ProposalPolicy(Policy):
         proposal = []
         for i in range(self.item_num):
             single_proposal = self.models[i].predict(hidden_state)
+            single_proposal = int(single_proposal)
             proposal.append(single_proposal)
-        return proposal
+        return np.array(proposal)
 
     def train(self):
         pass
@@ -168,6 +175,8 @@ class Agent:
     def propose(self, context, utterance, proposal):
         h_c, h_m, h_p = self.context_encoder(context), self.context_encoder(utterance), self.context_encoder(proposal)
         hidden_state = self.core_layer(np.concatenate([h_c, h_m, h_p]))
+        hidden_state = np.zeros([1, 100, 1])
+        # print('all the stuff in propose: h_c {}, h_m {}, h_p{}. hidden_state {}'.format(h_c.shape, h_m.shape, h_p.shape, hidden_state.shape))
         termination = self.termination_policy(hidden_state)
         utterance = self.utterance_policy(hidden_state)
         proposal = self.proposal_policy(hidden_state)

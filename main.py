@@ -1,5 +1,9 @@
+import os
+
 from game import Game
 from agents import Agent
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 AGENT_SETTINGS = {
     'lambda_termination': 0.05,  # entropy reguralization weight hyperparameter for termination policy
@@ -14,7 +18,7 @@ AGENT_SETTINGS = {
 }
 GAME_SETTINGS = {
     # 'linguistic_channel': True,
-    'batch_size': 128,
+    'batch_size': 2,
     'test_batch_size': 5,
     'episode_num': 5,
     # 'episode_num': 5 * 10 ^ 5
