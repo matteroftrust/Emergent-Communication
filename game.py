@@ -83,6 +83,7 @@ class Game:
 
             context = np.concatenate((item_pool, proposer.utilities))
             action = proposer.propose(context, action.utterance, action.proposal)
+            negotiations.append(action)
             # print('we are in t: {} and action is {}'.format(t, action))
 
             # print('action.terminate {}, action.isvalid {}'.format(action.terminate, action.is_valid(item_pool)))
@@ -92,8 +93,6 @@ class Game:
 
         # assign rewards
         reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
-        proposer.reward(reward_proposer)
-        hearer.reward(reward_hearer)
         return item_pool, negotiations, [reward_proposer, reward_hearer]
 
     def compute_rewards(self, item_pool, action, proposer, hearer):
