@@ -1,7 +1,6 @@
 from game import Game
 from agents import Agent
 
-
 AGENT_SETTINGS = {
     'lambda_termination': 0.05,  # entropy reguralization weight hyperparameter for termination policy
     'lambda_proposal': 0.05,  # entropy reguralization weight hyperparameter for proposal policy

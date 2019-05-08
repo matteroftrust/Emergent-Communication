@@ -69,7 +69,7 @@ class UtterancePolicy(Policy):
     """
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
-            LSTM(100, input_shape=(hidden_state_size, 1))
+            LSTM(100, input_shape=(15,))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
