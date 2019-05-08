@@ -57,7 +57,6 @@ class TerminationPolicy(Policy):
 
     def forward(self, hidden_state):
         confidence = self.model.predict(hidden_state)
-        print('this is confidence:', confidence.shape)
         confidence = np.mean(confidence)  # TODO this is completely wrong, I know
         return confidence >= 0.5
 

@@ -18,7 +18,6 @@ class Action:
         return 'Action prop_by: {}, term: {}, utter: {}, prop: {}'.format(self.proposed_by, self.terminate, self.utterance, self.proposal)
 
     def is_valid(self, item_pool):
-        print('this is item_pool', type(item_pool), item_pool.shape, type(self.proposal), self.proposal.shape)
         return not (self.proposal > item_pool).any()
 
 
@@ -84,7 +83,7 @@ class Game:
 
             context = np.concatenate((item_pool, proposer.utilities))
             action = proposer.propose(context, action.utterance, action.proposal)
-            print('we are in t: {} and action is {}'.format(t, action))
+            # print('we are in t: {} and action is {}'.format(t, action))
 
             # print('action.terminate {}, action.isvalid {}'.format(action.terminate, action.is_valid(item_pool)))
 
