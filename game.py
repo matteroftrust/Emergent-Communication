@@ -82,7 +82,7 @@ class Game:
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
 
             context = np.concatenate((item_pool, proposer.utilities))
-            action = proposer.propose(context, action.utterance, action.proposal)
+            action = proposer.propose(context, action.utterance, action.proposal)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             # print('we are in t: {} and action is {}'.format(t, action))
 

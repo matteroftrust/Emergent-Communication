@@ -146,7 +146,7 @@ class Agent:
         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
-        core_layer_shape = (100,)
+        core_layer_shape = (15, 100)
         self.core_layer_model = Sequential([
             Dense(hidden_state_size, input_shape=core_layer_shape),
             Activation('relu'),
@@ -172,8 +172,13 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal):
-        h_c, h_m, h_p = self.context_encoder(context), self.context_encoder(utterance), self.context_encoder(proposal)
-        hidden_state = self.core_layer(np.concatenate([h_c, h_m, h_p]))
+        h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
+        print('hey hcmps what are your shapess', h_c.shape, h_m.shape, h_p.shape)
+        input = np.concatenate([h_c, h_m, h_p])
+        input = np.zeros([1, 15, 100])
+        print('whats your shape input???', input.shape)
+        hidden_state = self.core_layer(input)
+        print('hey hideden state whats your shape????', hidden_state.shape)
         hidden_state = np.zeros([1, 100, 1])
         # print('all the stuff in propose: h_c {}, h_m {}, h_p{}. hidden_state {}'.format(h_c.shape, h_m.shape, h_p.shape, hidden_state.shape))
         termination = self.termination_policy(hidden_state)
