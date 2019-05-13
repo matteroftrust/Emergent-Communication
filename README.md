@@ -1,6 +1,6 @@
 # Emergent-Communication
 
-1. Create virtual environment and activate
+1. Create virtual environment and activate.
 
 ```
 virtualenv env
