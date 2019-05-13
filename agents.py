@@ -172,6 +172,7 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal):
+        print(var)
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         print('hey hcmps what are your shapess', h_c.shape, h_m.shape, h_p.shape)
         input = np.concatenate([h_c, h_m, h_p])
