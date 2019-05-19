@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.random import random_integers
 from .utils import generate_item_pool, generate_negotiation_time
+from .settings import ProjectSettings
 
 
 class Action:
@@ -39,18 +40,19 @@ class Game:
         #     'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
         # }
 
-    def play(self, settings):
+    def play(self, settings=ProjectSettings.default()):
         for i in range(self.episode_num):
 
             if i % 50:
-                self.tests()  # experiment statistics
+                self.tests(settings)  # experiment statistics
 
-            print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
-            batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
+            if settings.prompt:
+                print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
+            batch_item_pool, batch_negotiations, batch_rewards = self.next_episode(settings)
 
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
-    def next_episode(self):
+    def next_episode(self, settings=ProjectSettings.default()):
         batch_item_pool = []
         batch_negotiations = []
         batch_rewards = []
@@ -70,7 +72,7 @@ class Game:
 
         return batch_item_pool, batch_negotiations, batch_rewards
 
-    def negotiations(self, item_pool, n):
+    def negotiations(self, item_pool, n, settings=ProjectSettings.default()):
         action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
@@ -107,7 +109,7 @@ class Game:
             reward_hearer = 0
         return reward_proposer, reward_hearer
 
-    def tests(self):
+    def tests(self, settings=ProjectSettings.default()):
         pass
 
     def reinforce(self, batch_item_pool, batch_negotiations, batch_rewards):

@@ -1,9 +1,6 @@
 import argparse
 import os
 
-# from game import Game
-# from agents import Agent
-
 import emergent
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -41,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', help='wanna see comments?')
     args = parser.parse_args()
 
-    prompt = args.__dict__['p'] if args.__dict__['p'] in ['status', 'all'] else None
+    prompt = args.__dict__['p'] if args.__dict__['p'] in ['status', 'all'] else 'status'
 
     project_settings = emergent.settings.ProjectSettings(
         prompt=prompt

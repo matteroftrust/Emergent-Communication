@@ -22,6 +22,10 @@ class ProjectSettings(Settings):
     def __str__(self):
         return 'Project ' + super().__str__()
 
+    @classmethod
+    def default(self):
+        return ProjectSettings(prompt='status')
+
 
 class AgentSettings(Settings):
     """
