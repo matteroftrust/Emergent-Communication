@@ -172,14 +172,10 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal):
-        print(var)
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
-        print('hey hcmps what are your shapess', h_c.shape, h_m.shape, h_p.shape)
         input = np.concatenate([h_c, h_m, h_p])
         input = np.zeros([1, 15, 100])
-        print('whats your shape input???', input.shape)
         hidden_state = self.core_layer(input)
-        print('hey hideden state whats your shape????', hidden_state.shape)
         hidden_state = np.zeros([1, 100, 1])
         # print('all the stuff in propose: h_c {}, h_m {}, h_p{}. hidden_state {}'.format(h_c.shape, h_m.shape, h_p.shape, hidden_state.shape))
         termination = self.termination_policy(hidden_state)
