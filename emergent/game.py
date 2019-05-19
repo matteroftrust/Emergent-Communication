@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import random_integers
-from utils import generate_item_pool, generate_negotiation_time
+from .utils import generate_item_pool, generate_negotiation_time
 
 
 class Action:
@@ -39,7 +39,7 @@ class Game:
         #     'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
         # }
 
-    def play(self):
+    def play(self, settings):
         for i in range(self.episode_num):
 
             if i % 50:

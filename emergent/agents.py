@@ -9,7 +9,7 @@ from numpy.random import random_integers
 import itertools
 import numpy as np
 
-from game import Action
+from .game import Action
 
 
 class NumberSequenceEncoder:
