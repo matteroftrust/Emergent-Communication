@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import random_integers
-from .utils import generate_item_pool, generate_negotiation_time
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status
 from .settings import ProjectSettings
 
 
@@ -46,9 +46,9 @@ class Game:
             if i % 50:
                 self.tests(settings)  # experiment statistics
 
-            if settings.prompt:
-                print('### Starting episode {} out of {} ###'.format(i, self.episode_num))
+            print_status('### Starting episode {} out of {} ###'.format(i, self.episode_num), settings)
             batch_item_pool, batch_negotiations, batch_rewards = self.next_episode(settings)
+            print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch_item_pool, batch_negotiations, batch_rewards), settings)
 
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 

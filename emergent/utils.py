@@ -14,3 +14,13 @@ def generate_negotiation_time():
         out = poisson(7, 1)
         if out >= 4 and out <= 10:
             return int(out)
+
+
+def print_status(message, settings):
+    if getattr(settings, 'prompt', 'status') == 'status':
+        print(message)
+
+
+def print_all(message, settings):
+    if getattr(settings, 'prompt', 'status') in ['status', 'all']:
+        print(message)
