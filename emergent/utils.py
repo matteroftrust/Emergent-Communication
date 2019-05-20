@@ -34,6 +34,8 @@ def validation(func):
     Wrapper for validation.
     """
     def function_wrapper(*args, **kwargs):
+        print('this is validation!!!!!! decorator')
+        print(project_settings.validation)
         if project_settings.validation:
             is_valid, msg = func(*args, **kwargs)
             if not is_valid:

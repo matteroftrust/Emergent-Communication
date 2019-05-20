@@ -44,7 +44,7 @@ class ProjectSettings(Settings):
 
     def __init__(self, prompt='status', validation=True):
         self.prompt = prompt
-        self.validation = validation
+        self.validation = [True, False][validation in ['False', False]]
 
     def __str__(self):
         return 'Project ' + super().__str__()

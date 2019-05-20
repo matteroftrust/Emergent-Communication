@@ -36,24 +36,28 @@ if __name__ == '__main__':
     )
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', help='wanna see comments?')
-    parser.add_argument('-v', help='data validation?')
+    parser.add_argument('-p', dest='prompt', help='wanna see comments?')
+    parser.add_argument('--v', action='store_true', dest='validation', help='data validation?')
+    parser.set_defaults(validation=False, prompt='status')
     args = parser.parse_args()
 
-    prompt = args.__dict__['p'] if args.__dict__['p'] in ['status', 'all', 'none'] else 'status'
-
-    validation = args.__dict__['v'] if 'v' in args.__dict__ else False
+    prompt = args.__dict__['prompt']
+    validation = args.__dict__['validation']
 
     project_settings = emergent.settings.ProjectSettings(
         prompt=prompt,
         validation=validation
     )
-
+    print('validation {} prompt {}'.format(validation, prompt))
+    try:
+        os.remove('config.ini')
+    except:
+        pass
     config = SafeConfigParser()
     config.read('config.ini')
     config.add_section('project_settings')
     config.set('project_settings', 'prompt', prompt)
-    config.set('project_settings', 'validation', validation)
+    config.set('project_settings', 'validation', str(validation))
     # config.set('main', 'key2', 'value2')
     # config.set('main', 'key3', 'value3')
 
