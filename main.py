@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', dest='prompt', help='wanna see comments?')
-    parser.add_argument('--v', action='store_true', dest='validation', help='data validation?')
+    parser.add_argument('-v', action='store_true', dest='validation', help='data validation?')
     parser.set_defaults(validation=False, prompt='status')
     args = parser.parse_args()
 
