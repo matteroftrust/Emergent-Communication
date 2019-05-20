@@ -1,3 +1,29 @@
+from configparser import SafeConfigParser
+
+
+def load_settings(config_file='config.ini'):
+    config = SafeConfigParser()
+    config.read('config.ini')
+
+    try:
+        project_settings = ProjectSettings(**dict(config.items('project_settings')))
+    except:
+        project_settings = ProjectSettings()
+
+    # try:
+    #     agent_settings = AgentSettings(**dict(config.items('agent_settings')))
+    # except:
+    #     agent_settings = AgentSettings()
+    #
+    # try:
+    #     game_settings = GameSettings(**dict(config.items('game_settings')))
+    # except:
+    #     game_settings = GameSettings()
+
+    # return project_settings, agent_settings, game_settings
+    return project_settings, None, None
+
+
 class Settings():
     def __str__(self):
         text = 'Settings:\n'
@@ -16,15 +42,12 @@ class ProjectSettings(Settings):
     General project settings.
     """
 
-    def __init__(self, prompt=None):
+    def __init__(self, prompt='status', validation=True):
         self.prompt = prompt
+        self.validation = validation
 
     def __str__(self):
         return 'Project ' + super().__str__()
-
-    @classmethod
-    def default(self):
-        return ProjectSettings(prompt='status')
 
 
 class AgentSettings(Settings):

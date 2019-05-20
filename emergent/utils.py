@@ -1,4 +1,7 @@
 from numpy.random import random_integers, poisson
+from .settings import load_settings
+
+project_settings, _, _ = load_settings()
 
 
 def generate_item_pool():
@@ -16,11 +19,23 @@ def generate_negotiation_time():
             return int(out)
 
 
-def print_status(message, settings):
-    if getattr(settings, 'prompt', 'status') == 'status':
+def print_status(message):
+    if getattr(project_settings, 'prompt', 'status') == 'status':
         print(message)
 
 
-def print_all(message, settings):
-    if getattr(settings, 'prompt', 'status') in ['status', 'all']:
+def print_all(message):
+    if getattr(project_settings, 'prompt', 'status') in ['status', 'all']:
         print(message)
+
+
+def validation(func):
+    """
+    Wrapper for validation.
+    """
+    def function_wrapper(*args, **kwargs):
+        if project_settings.validation:
+            is_valid, msg = func(*args, **kwargs)
+            if not is_valid:
+                print('Validation failed\n' + msg)
+    return function_wrapper

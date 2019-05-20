@@ -1,5 +1,6 @@
 import argparse
 import os
+from configparser import SafeConfigParser
 
 import emergent
 
@@ -36,13 +37,28 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', help='wanna see comments?')
+    parser.add_argument('-v', help='data validation?')
     args = parser.parse_args()
 
-    prompt = args.__dict__['p'] if args.__dict__['p'] in ['status', 'all'] else 'status'
+    prompt = args.__dict__['p'] if args.__dict__['p'] in ['status', 'all', 'none'] else 'status'
+
+    validation = args.__dict__['v'] if 'v' in args.__dict__ else False
 
     project_settings = emergent.settings.ProjectSettings(
-        prompt=prompt
+        prompt=prompt,
+        validation=validation
     )
+
+    config = SafeConfigParser()
+    config.read('config.ini')
+    config.add_section('project_settings')
+    config.set('project_settings', 'prompt', prompt)
+    config.set('project_settings', 'validation', validation)
+    # config.set('main', 'key2', 'value2')
+    # config.set('main', 'key3', 'value3')
+
+    with open('config.ini', 'w') as f:
+        config.write(f)
 
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
 
@@ -52,4 +68,8 @@ if __name__ == '__main__':
     #
     # game = Game(agents=agents, settings=SIMULATION_SETTINGS, **GAME_SETTINGS)
 
-    game.play(project_settings)
+    game.play()
+
+    # remove config file
+
+    os.remove('config.ini')

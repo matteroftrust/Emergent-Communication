@@ -1,7 +1,9 @@
 import numpy as np
 from numpy.random import random_integers
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status
-from .settings import ProjectSettings
+from .settings import load_settings
+
+project_settings, _, _ = load_settings()
 
 
 class Action:
@@ -17,6 +19,8 @@ class Action:
 
     def __str__(self):
         return 'Action prop_by: {}, term: {}, utter: {}, prop: {}'.format(self.proposed_by, self.terminate, self.utterance, self.proposal)
+
+    __repr__ = __str__
 
     def is_valid(self, item_pool):
         return not (self.proposal > item_pool).any()
@@ -40,19 +44,19 @@ class Game:
         #     'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
         # }
 
-    def play(self, settings=ProjectSettings.default()):
+    def play(self):
         for i in range(self.episode_num):
 
             if i % 50:
-                self.tests(settings)  # experiment statistics
+                self.tests()  # experiment statistics
 
-            print_status('### Starting episode {} out of {} ###'.format(i, self.episode_num), settings)
-            batch_item_pool, batch_negotiations, batch_rewards = self.next_episode(settings)
-            print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch_item_pool, batch_negotiations, batch_rewards), settings)
+            print_status('### Starting episode {} out of {} ###'.format(i, self.episode_num))
+            batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
+            print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch_item_pool, batch_negotiations, batch_rewards))
 
             self.reinforce(batch_item_pool, batch_negotiations, batch_rewards)
 
-    def next_episode(self, settings=ProjectSettings.default()):
+    def next_episode(self):
         batch_item_pool = []
         batch_negotiations = []
         batch_rewards = []
@@ -72,7 +76,7 @@ class Game:
 
         return batch_item_pool, batch_negotiations, batch_rewards
 
-    def negotiations(self, item_pool, n, settings=ProjectSettings.default()):
+    def negotiations(self, item_pool, n):
         action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
@@ -109,7 +113,7 @@ class Game:
             reward_hearer = 0
         return reward_proposer, reward_hearer
 
-    def tests(self, settings=ProjectSettings.default()):
+    def tests(self):
         pass
 
     def reinforce(self, batch_item_pool, batch_negotiations, batch_rewards):

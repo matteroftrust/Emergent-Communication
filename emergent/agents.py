@@ -10,6 +10,11 @@ import itertools
 import numpy as np
 
 from .game import Action
+from .utils import print_all, validation
+from .settings import load_settings
+
+
+project_settings, _, _ = load_settings()
 
 
 class NumberSequenceEncoder:
@@ -45,7 +50,7 @@ class TerminationPolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(1, input_shape=(hidden_state_size, 1)),
+            Dense(hidden_state_size, input_shape=(hidden_state_size, 1)),
             # sigmoid()
             Activation('sigmoid')
         ])
@@ -56,12 +61,20 @@ class TerminationPolicy(Policy):
                            metrics=['accuracy'])
 
     def forward(self, hidden_state):
+        self.input_is_valid(hidden_state)
         confidence = self.model.predict(hidden_state)
         confidence = np.mean(confidence)  # TODO this is completely wrong, I know
         return confidence >= 0.5
 
     def train(self):
         pass
+
+    @validation
+    def input_is_valid(self, input):
+        expected_shape = (1, 15, 1)
+        is_valid = input.shape == expected_shape
+        msg = 'Termination Policy input invalid. Expected: {} received: {}'.format(expected_shape, input.shape)
+        return is_valid, msg
 
 
 class UtterancePolicy(Policy):
@@ -74,7 +87,7 @@ class UtterancePolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
             # LSTM(100, input_shape=(15,))
-            LSTM(100, input_shape=(hidden_state_size, 1))
+            LSTM(hidden_state_size, input_shape=(100, 1))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
@@ -106,11 +119,14 @@ class ProposalPolicy(Policy):
             self.models.append(model)
 
     def forward(self, hidden_state):
+        print('are we here?')
         proposal = []
         for i in range(self.item_num):
             single_proposal = self.models[i].predict(hidden_state)
+            print('what a proposal is?', single_proposal.shape, single_proposal)
             single_proposal = int(single_proposal)
             proposal.append(single_proposal)
+        print('did we get here?', proposal)
         return np.array(proposal)
 
     def train(self):
@@ -141,14 +157,13 @@ class Agent:
         self.vocab_size = vocab_size
 
         # NumberSequenceEncoders
-        self.context_encoder = NumberSequenceEncoder(input_dim=11, output_dim=hidden_state_size)  # is this correct?
+        self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?
         # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
-        core_layer_shape = (15, 100)
         self.core_layer_model = Sequential([
-            Dense(hidden_state_size, input_shape=core_layer_shape),
+            Dense(100, input_shape=(1500,)),
             Activation('relu'),
         ])
         self.core_layer = self.core_layer_model.predict
@@ -172,12 +187,22 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal):
+        print_all('# Proposal by {} previous proposal {}'.format(self.id, proposal))
+        # print('context, utterance, proposal {} {} {}'.format(context.shape, utterance.shape, proposal.shape))
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
+        # print('hc hm hp {} {} {}'.format(h_c.shape, h_m.shape, h_p.shape))
         input = np.concatenate([h_c, h_m, h_p])
-        input = np.zeros([1, 15, 100])
+        print_all('hidden state original: {}'.format(input.shape))
+        input = np.reshape(input, (1, 1500))
+        print_all('hidden state : {}'.format(input.shape))
         hidden_state = self.core_layer(input)
-        hidden_state = np.zeros([1, 100, 1])
+        hidden_state = np.expand_dims(hidden_state, axis=2)
+        print_all('hidden state after: {}'.format(hidden_state.shape))
+
+        # hidden_state = np.zeros([1, 100, 1])
+        # print_all('hidden state: {}'.format(hidden_state.shape), settings)
         # print('all the stuff in propose: h_c {}, h_m {}, h_p{}. hidden_state {}'.format(h_c.shape, h_m.shape, h_p.shape, hidden_state.shape))
+        # hidden_state = np.expand_dims(hidden_state, axis=2)
         termination = self.termination_policy(hidden_state)
         utterance = self.utterance_policy(hidden_state)
         proposal = self.proposal_policy(hidden_state)
