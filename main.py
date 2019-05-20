@@ -2,17 +2,42 @@ import argparse
 import os
 from configparser import SafeConfigParser
 
-import emergent
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-class Config:
-    def __init__(*kwargs):
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', dest='prompt', help='wanna see comments?')
+    parser.add_argument('-v', action='store_true', dest='validation', help='data validation?')
+    parser.set_defaults(validation=False, prompt='status')
+    args = parser.parse_args()
+
+    prompt = args.__dict__['prompt']
+    validation = args.__dict__['validation']
+
+
+    try:
+        os.remove('config.ini')
+    except:
         pass
 
+    config = SafeConfigParser()
+    config.read('config.ini')
+    config.add_section('project_settings')
+    config.set('project_settings', 'prompt', prompt)
+    config.set('project_settings', 'validation', str(validation))
 
-if __name__ == '__main__':
+    with open('config.ini', 'a') as f:
+        config.write(f)
+
+    import emergent
+
+    project_settings = emergent.settings.ProjectSettings(
+        prompt=prompt,
+        validation=validation
+    )
 
     agent_settings = emergent.settings.AgentSettings(
         lambda_termination=0.05,  # entropy reguralization weight hyperparameter for termination policy
@@ -35,45 +60,8 @@ if __name__ == '__main__':
         item_num=3
     )
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', dest='prompt', help='wanna see comments?')
-    parser.add_argument('-v', action='store_true', dest='validation', help='data validation?')
-    parser.set_defaults(validation=False, prompt='status')
-    args = parser.parse_args()
-
-    prompt = args.__dict__['prompt']
-    validation = args.__dict__['validation']
-
-    project_settings = emergent.settings.ProjectSettings(
-        prompt=prompt,
-        validation=validation
-    )
-    print('validation {} prompt {}'.format(validation, prompt))
-    try:
-        os.remove('config.ini')
-    except:
-        pass
-    config = SafeConfigParser()
-    config.read('config.ini')
-    config.add_section('project_settings')
-    config.set('project_settings', 'prompt', prompt)
-    config.set('project_settings', 'validation', str(validation))
-    # config.set('main', 'key2', 'value2')
-    # config.set('main', 'key3', 'value3')
-
-    with open('config.ini', 'w') as f:
-        config.write(f)
-
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
 
     game = emergent.Game(agents=agents, **game_settings.as_dict())
-    #
-    # agents = Agent.create_agents(n=2, settings=SIMULATION_SETTINGS, **AGENT_SETTINGS)
-    #
-    # game = Game(agents=agents, settings=SIMULATION_SETTINGS, **GAME_SETTINGS)
 
     game.play()
-
-    # remove config file
-
-    os.remove('config.ini')

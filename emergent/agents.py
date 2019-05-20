@@ -10,7 +10,7 @@ import itertools
 import numpy as np
 
 from .game import Action
-from .utils import print_all, validation
+from .utils import print_all, print_status, validation
 from .settings import load_settings
 
 
@@ -41,6 +41,19 @@ class Policy:
     def forward(*args, **kwargs):
         pass
 
+    @validation
+    def input_is_valid(self, input):
+        expected_shape = (1, 100, 1)
+        is_valid = input.shape == expected_shape
+        msg = '{} input invalid. Expected: {} received: {}'.format(self.__class__.__name__, expected_shape, input.shape)
+        return is_valid, msg
+
+    @validation
+    def output_is_valid(self, output, expected_shape):
+        is_valid = output.shape == expected_shape
+        msg = '{} output invalid. Expected: {} received: {}\noutput: {}'.format(self.__class__.__name__, expected_shape, output.shape, output)
+        return is_valid, msg
+
 
 class TerminationPolicy(Policy):
     """
@@ -60,21 +73,22 @@ class TerminationPolicy(Policy):
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
 
+    @validation
+    def output_is_valid(self, output):
+        is_valid = type(output) in [bool, np.bool, np.bool_]
+        msg = '{} output invalid. Expected: {} received: {}'.format(self.__class__.__name__, type(output), 'boolean')
+        return is_valid, msg
+
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
         confidence = self.model.predict(hidden_state)
         confidence = np.mean(confidence)  # TODO this is completely wrong, I know
-        return confidence >= 0.5
+        out = confidence >= 0.5
+        self.output_is_valid(out)
+        return out
 
     def train(self):
         pass
-
-    @validation
-    def input_is_valid(self, input):
-        expected_shape = (1, 15, 1)
-        is_valid = input.shape == expected_shape
-        msg = 'Termination Policy input invalid. Expected: {} received: {}'.format(expected_shape, input.shape)
-        return is_valid, msg
 
 
 class UtterancePolicy(Policy):
@@ -94,7 +108,9 @@ class UtterancePolicy(Policy):
                            metrics=['accuracy'])
 
     def forward(self, hidden_state):
+        self.input_is_valid(hidden_state)
         utterance = self.model.predict(hidden_state)
+        self.output_is_valid(utterance, (6))
         return utterance
 
     def train(self):
@@ -119,15 +135,15 @@ class ProposalPolicy(Policy):
             self.models.append(model)
 
     def forward(self, hidden_state):
-        print('are we here?')
+        self.input_is_valid(hidden_state)
         proposal = []
         for i in range(self.item_num):
             single_proposal = self.models[i].predict(hidden_state)
-            print('what a proposal is?', single_proposal.shape, single_proposal)
             single_proposal = int(single_proposal)
             proposal.append(single_proposal)
-        print('did we get here?', proposal)
-        return np.array(proposal)
+        out = np.array(proposal)
+        self.output_is_valid(out, (3))
+        return out
 
     def train(self):
         pass
@@ -140,6 +156,8 @@ class Agent:
     def __init__(self, lambda_termination, lambda_proposal,
                  lambda_utterance, hidden_state_size, vocab_size,
                  dim_size, utterance_len, discount_factor, learning_rate):
+        print_all('THS IS  PRINT ALLLL')
+        print_status('THIS IS PRINT STATUS')
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate

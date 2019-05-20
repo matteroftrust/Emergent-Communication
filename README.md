@@ -15,5 +15,5 @@ pip install -r requirements.txt
 3. Run simulation
 
 ```
-python main.py [-p] ['status', 'all', 'none'] [-v] [whatever]
+python main.py [-p] ['status', 'all', 'none'] [-v]
 ```
