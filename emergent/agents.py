@@ -156,8 +156,6 @@ class Agent:
     def __init__(self, lambda_termination, lambda_proposal,
                  lambda_utterance, hidden_state_size, vocab_size,
                  dim_size, utterance_len, discount_factor, learning_rate):
-        print_all('THS IS  PRINT ALLLL')
-        print_status('THIS IS PRINT STATUS')
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate

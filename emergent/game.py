@@ -39,10 +39,6 @@ class Game:
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
-        # we might need something like this here:
-        # self.settings = {
-        #     'linguistic_channel': settings['linguistic_channel'] if 'linguistic_channel' in settings else True,
-        # }
 
     def play(self):
         for i in range(self.episode_num):
