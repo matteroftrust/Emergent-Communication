@@ -107,7 +107,13 @@ class UtterancePolicy(Policy):
                            loss='mse',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
 
+    @property
+    def dummy(self):
+        return np.zeros(6)
+
     def forward(self, hidden_state):
+        if True:
+            return self.dummy
         self.input_is_valid(hidden_state)
         utterance = self.model.predict(hidden_state)
         self.output_is_valid(utterance, (6))
@@ -142,7 +148,7 @@ class ProposalPolicy(Policy):
             single_proposal = int(single_proposal)
             proposal.append(single_proposal)
         out = np.array(proposal)
-        self.output_is_valid(out, (3))
+        self.output_is_valid(out, (3,))
         return out
 
     def train(self):
@@ -204,9 +210,7 @@ class Agent:
 
     def propose(self, context, utterance, proposal):
         print_all('# Proposal by {} previous proposal {}'.format(self.id, proposal))
-        # print('context, utterance, proposal {} {} {}'.format(context.shape, utterance.shape, proposal.shape))
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
-        # print('hc hm hp {} {} {}'.format(h_c.shape, h_m.shape, h_p.shape))
         input = np.concatenate([h_c, h_m, h_p])
         print_all('hidden state original: {}'.format(input.shape))
         input = np.reshape(input, (1, 1500))
