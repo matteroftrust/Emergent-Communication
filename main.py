@@ -48,17 +48,18 @@ if __name__ == '__main__':
         utterance_len=6,
         dim_size=100,
         discount_factor=0.99,
-        learning_rate=0.001
+        learning_rate=0.001,
+        utterance_channel=False
     )
 
-    game_settings = emergent.settings.GameSettings(
+    game_settings = emergent.settings.GameSettings()
         # 'linguistic_channel': True,
-        batch_size=2,
-        test_batch_size=5,
-        episode_num=5,
-        # 'episode_num': 5 * 10 ^ 5
-        item_num=3
-    )
+        # batch_size=2,
+        # test_batch_size=5,
+        # episode_num=5,
+        # # 'episode_num': 5 * 10 ^ 5
+        # item_num=3
+
 
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
 

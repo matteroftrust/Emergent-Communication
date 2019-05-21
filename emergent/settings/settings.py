@@ -10,18 +10,18 @@ def load_settings(config_file='config.ini'):
     except:
         project_settings = ProjectSettings()
 
-    # try:
-    #     agent_settings = AgentSettings(**dict(config.items('agent_settings')))
-    # except:
-    #     agent_settings = AgentSettings()
-    #
-    # try:
-    #     game_settings = GameSettings(**dict(config.items('game_settings')))
-    # except:
-    #     game_settings = GameSettings()
 
-    # return project_settings, agent_settings, game_settings
-    return project_settings, None, None
+    try:
+        agent_settings = AgentSettings(**dict(config.items('agent_settings')))
+    except:
+        agent_settings = AgentSettings()
+
+    try:
+        game_settings = GameSettings(**dict(config.items('game_settings')))
+    except:
+        game_settings = GameSettings()
+
+    return project_settings, agent_settings, game_settings
 
 
 class Settings():
@@ -54,8 +54,16 @@ class AgentSettings(Settings):
     """
     Agent specific settings.
     """
-    def __init__(self, lambda_termination, lambda_proposal, lambda_utterance, hidden_state_size, vocab_size,
-                 utterance_len, dim_size, discount_factor, learning_rate):
+    def __init__(self, lambda_termination=0.05,  # entropy reguralization weight hyperparameter for termination policy
+                 lambda_proposal=0.05,  # entropy reguralization weight hyperparameter for proposal policy
+                 lambda_utterance=0.001,  # entropy reguralization weight hyperparameter for linguistic utterance policy
+                 hidden_state_size=100,
+                 vocab_size=11,
+                 utterance_len=6,
+                 dim_size=100,
+                 discount_factor=0.99,
+                 learning_rate=0.001,
+                 utterance_channel=False):
         self.lambda_termination = lambda_termination
         self.lambda_proposal = lambda_proposal
         self.lambda_utterance = lambda_utterance
@@ -65,6 +73,7 @@ class AgentSettings(Settings):
         self.dim_size = dim_size
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
+        self.utterance_channel = utterance_channel
 
     def __str__(self):
         return 'Agent ' + super().__str__()
@@ -75,7 +84,7 @@ class GameSettings(Settings):
     Game specific settings.
     """
 
-    def __init__(self, batch_size, test_batch_size, episode_num, item_num):
+    def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3):
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num

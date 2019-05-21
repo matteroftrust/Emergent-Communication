@@ -14,7 +14,7 @@ from .utils import print_all, print_status, validation
 from .settings import load_settings
 
 
-project_settings, _, _ = load_settings()
+project_settings, agent_settings, game_settings = load_settings()
 
 
 class NumberSequenceEncoder:
@@ -111,8 +111,8 @@ class UtterancePolicy(Policy):
     def dummy(self):
         return np.zeros(6)
 
-    def forward(self, hidden_state):
-        if True:
+    def forward(self, hidden_state, utterance_channel=False):
+        if not utterance_channel:
             return self.dummy
         self.input_is_valid(hidden_state)
         utterance = self.model.predict(hidden_state)
@@ -161,7 +161,8 @@ class Agent:
 
     def __init__(self, lambda_termination, lambda_proposal,
                  lambda_utterance, hidden_state_size, vocab_size,
-                 dim_size, utterance_len, discount_factor, learning_rate):
+                 dim_size, utterance_len, discount_factor, learning_rate,
+                 utterance_channel):
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
@@ -175,6 +176,7 @@ class Agent:
         self.utterance_policy = UtterancePolicy(hidden_state_size)
         self.proposal_policy = ProposalPolicy(hidden_state_size)
 
+        self.utterance_channel = utterance_channel
         self.utterance_len = utterance_len
         self.vocab_size = vocab_size
 
