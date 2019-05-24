@@ -1,17 +1,16 @@
-from keras.layers import Dense, Activation
-from keras.layers.embeddings import Embedding
-from keras.layers.recurrent import LSTM
-from keras.models import Sequential
-from keras.activations import sigmoid
-# from keras.preprocessing import sequence
-
 from numpy.random import random_integers
 import itertools
 import numpy as np
 
 from .game import Action
-from .utils import print_all, print_status, validation
 from .settings import load_settings
+from .utils import print_all, print_status, validation
+
+from keras.activations import sigmoid
+from keras.layers import Dense, Activation
+from keras.layers.embeddings import Embedding
+from keras.layers.recurrent import LSTM
+from keras.models import Sequential
 
 
 project_settings, agent_settings, game_settings = load_settings()
@@ -100,7 +99,6 @@ class UtterancePolicy(Policy):
     """
     def __init__(self, hidden_state_size, entropy_reg=0.001):
         self.model = Sequential([
-            # LSTM(100, input_shape=(15,))
             LSTM(hidden_state_size, input_shape=(100, 1))
         ])
         self.model.compile(optimizer='adam',
@@ -221,9 +219,6 @@ class Agent:
         hidden_state = np.expand_dims(hidden_state, axis=2)
         print_all('hidden state after: {}'.format(hidden_state.shape))
 
-        # hidden_state = np.zeros([1, 100, 1])
-        # print_all('hidden state: {}'.format(hidden_state.shape), settings)
-        # print('all the stuff in propose: h_c {}, h_m {}, h_p{}. hidden_state {}'.format(h_c.shape, h_m.shape, h_p.shape, hidden_state.shape))
         # hidden_state = np.expand_dims(hidden_state, axis=2)
         termination = self.termination_policy(hidden_state)
         utterance = self.utterance_policy(hidden_state)
@@ -232,17 +227,7 @@ class Agent:
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
 
         return action
-        # Maybe the model initiation can be moved to constructor / outside this function, to avoid model loading times at each function call?
 
-        # I think output size should be 100 instead of 1, because it is fed into NNs and LSTMs.
-        # model = Sequential([Dense(100, input_shape=(proposal_triple_size,)),
-        #                     Activation('relu')]
-        #                    )
-        # hidden_state = model.fit(proposal_triple)
-
-        # I will stop here, because I am not sure whether you were planning to return the hidden state or also use the policies here ;)
-
-        return Action(False, np.zeros(10), np.zeros(3), self.id)
 
     def reward(self, reward):
         pass

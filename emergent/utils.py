@@ -1,5 +1,5 @@
-from numpy.random import random_integers, poisson
 from .settings import load_settings
+from numpy.random import random_integers, poisson
 
 project_settings, _, _ = load_settings()
 

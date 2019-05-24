@@ -1,7 +1,8 @@
-import numpy as np
 from numpy.random import random_integers
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status
+import numpy as np
+
 from .settings import load_settings
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status
 
 project_settings, _, _ = load_settings()
 
@@ -68,7 +69,7 @@ class Game:
             batch_item_pool.append(item_pool)
             batch_negotiations.append(negotiations)
             batch_rewards.append(rewards)
-            # remember about random order while adding stuff to batch_negotiations nad batch_rewards
+            # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
         return batch_item_pool, batch_negotiations, batch_rewards
 
@@ -86,9 +87,7 @@ class Game:
             context = np.concatenate((item_pool, proposer.utilities))
             action = proposer.propose(context, action.utterance, action.proposal)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
-            # print('we are in t: {} and action is {}'.format(t, action))
-
-            # print('action.terminate {}, action.isvalid {}'.format(action.terminate, action.is_valid(item_pool)))
+            print_all('we are in t: {} and action is {}'.format(t, action))
 
             if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
                 break  # if terminate then negotiations are over

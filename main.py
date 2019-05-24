@@ -1,6 +1,6 @@
+from configparser import SafeConfigParser
 import argparse
 import os
-from configparser import SafeConfigParser
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -32,7 +32,9 @@ if __name__ == '__main__':
     with open('config.ini', 'a') as f:
         config.write(f)
 
+    # emergent module has to be imported after config.init file is created.
     import emergent
+    from emergent.utils import print_status
 
     project_settings = emergent.settings.ProjectSettings(
         prompt=prompt,
@@ -60,9 +62,12 @@ if __name__ == '__main__':
         # # 'episode_num': 5 * 10 ^ 5
         # item_num=3
 
-
+    print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
 
+    print_status('\n### Game initialization. ###\n')
     game = emergent.Game(agents=agents, **game_settings.as_dict())
 
+    print_status('\n### Starting experiment. ###\n')
     game.play()
+    print_status('\n### ### Done. ### ###\n')
