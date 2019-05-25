@@ -8,14 +8,23 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 if __name__ == '__main__':
 
+    # we might want to use it for controlling speed of the script
+    # https://docs.python.org/3.6/library/profile.html
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', dest='prompt', help='wanna see comments?')
     parser.add_argument('-v', action='store_true', dest='validation', help='data validation?')
-    parser.set_defaults(validation=False, prompt='status')
+    parser.add_argument('--batch_size', dest='batch_size', type=int)
+    parser.add_argument('--test_batch_size', dest='test_batch_size', type=int)
+    parser.add_argument('--episode_num', dest='episode_num', type=int)
+    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2)
     args = parser.parse_args()
 
     prompt = args.__dict__['prompt']
     validation = args.__dict__['validation']
+    batch_size = args.__dict__['batch_size']
+    test_batch_size = args.__dict__['test_batch_size']
+    episode_num = args.__dict__['episode_num']
 
 
     try:
@@ -54,11 +63,12 @@ if __name__ == '__main__':
         utterance_channel=False
     )
 
-    game_settings = emergent.settings.GameSettings()
+    game_settings = emergent.settings.GameSettings(
+        batch_size=batch_size,
+        test_batch_size=test_batch_size,
+        episode_num=episode_num
+    )
         # 'linguistic_channel': True,
-        # batch_size=2,
-        # test_batch_size=5,
-        # episode_num=5,
         # # 'episode_num': 5 * 10 ^ 5
         # item_num=3
 

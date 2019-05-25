@@ -16,7 +16,7 @@ class Action:
         self.proposed_by = id
         self.terminate = terminate
         self.utterance = utterance
-        self.proposal = proposal
+        self.proposal = proposal.astype(int)
 
     def __str__(self):
         return 'Action prop_by: {}, term: {}, utter: {}, prop: {}'.format(self.proposed_by, self.terminate, self.utterance, self.proposal)
@@ -47,7 +47,7 @@ class Game:
             if i % 50:
                 self.tests()  # experiment statistics
 
-            print_status('### Starting episode {} out of {} ###'.format(i, self.episode_num))
+            print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch_item_pool, batch_negotiations, batch_rewards = self.next_episode()
             print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch_item_pool, batch_negotiations, batch_rewards))
 
@@ -69,7 +69,13 @@ class Game:
             batch_item_pool.append(item_pool)
             batch_negotiations.append(negotiations)
             batch_rewards.append(rewards)
-            # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
+
+        batch_item_pool = np.array(batch_item_pool)
+        batch_negotiations = np.array(batch_negotiations)
+        batch_rewards = np.array(batch_rewards)
+
+        print('bath_item_pool {} batch_negotiations {} batch_rewards {}'.format(batch_item_pool.shape, batch_negotiations.shape, batch_rewards.shape))
+        # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
         return batch_item_pool, batch_negotiations, batch_rewards
 
