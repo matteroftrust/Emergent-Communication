@@ -62,7 +62,7 @@ class TerminationPolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(hidden_state_size, input_shape=(hidden_state_size, 1)),
+            Dense(1, input_shape=(hidden_state_size, 1)),
             # sigmoid()
             Activation('sigmoid')
         ])
@@ -80,9 +80,10 @@ class TerminationPolicy(Policy):
 
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
-        confidence = self.model.predict(hidden_state)
+        confidence = self.model.predict(hidden_state) # this should return just a value or an array of values for a batch input
+        print_all('TerminationPolicy output dim: {}'.format(confidence.shape))
         confidence = np.mean(confidence)  # TODO this is completely wrong, I know
-        out = confidence >= 0.5
+        out = np.random.random() <= confidence # we sample with probability, TOOD should find something more elegant
         self.output_is_valid(out)
         return out
 
@@ -149,7 +150,7 @@ class ProposalPolicy(Policy):
         self.output_is_valid(out, (3,))
         return out
 
-    def train(self):
+    def train(self, ):
         pass
 
 
@@ -185,7 +186,7 @@ class Agent:
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
         self.core_layer_model = Sequential([
-            Dense(100, input_shape=(1500,)),
+            Dense(100, input_shape=(1500,), name="{}_dense".format(self.id)),
             Activation('relu'),
         ])
         self.core_layer = self.core_layer_model.predict

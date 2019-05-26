@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     # emergent module has to be imported after config.init file is created.
     import emergent
-    from emergent.utils import print_status
+    from emergent.utils import print_status, print_all
 
     project_settings = emergent.settings.ProjectSettings(
         prompt=prompt,
@@ -74,6 +74,10 @@ if __name__ == '__main__':
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
+    print_all('agents summary')
+    for agent in agents:
+        print('\nsummary {}'.format(agent.id))
+        print(agent.core_layer_model.summary())
 
     print_status('\n### Game initialization. ###\n')
     game = emergent.Game(agents=agents, **game_settings.as_dict())
