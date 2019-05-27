@@ -228,11 +228,11 @@ class Agent:
         termination = self.termination_policy(hidden_state)
         utterance = self.utterance_policy(hidden_state)
         proposal = self.proposal_policy(hidden_state)
+        hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
 
-        return action
-
+        return action, hidden_state
 
     def reward(self, reward):
         pass

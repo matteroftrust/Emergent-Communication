@@ -26,6 +26,8 @@ if __name__ == '__main__':
     test_batch_size = args.__dict__['test_batch_size']
     episode_num = args.__dict__['episode_num']
 
+    print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(prompt, validation, batch_size, test_batch_size, episode_num))
+
 
     try:
         os.remove('config.ini')
@@ -37,6 +39,11 @@ if __name__ == '__main__':
     config.add_section('project_settings')
     config.set('project_settings', 'prompt', prompt)
     config.set('project_settings', 'validation', str(validation))
+
+    config.add_section('game_settings')
+    config.set('game_settings', 'batch_size', str(batch_size))
+    config.set('game_settings', 'test_batch_size', str(test_batch_size))
+    config.set('game_settings', 'episode_num', str(episode_num))
 
     with open('config.ini', 'a') as f:
         config.write(f)

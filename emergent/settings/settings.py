@@ -17,7 +17,9 @@ def load_settings(config_file='config.ini'):
         agent_settings = AgentSettings()
 
     try:
-        game_settings = GameSettings(**dict(config.items('game_settings')))
+        args = dict(config.items('game_settings'))
+        args = dict([key, int(val)] for key, val in args.items())
+        game_settings = GameSettings(**args)
     except:
         game_settings = GameSettings()
 
