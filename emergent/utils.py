@@ -1,6 +1,8 @@
 from .settings import load_settings
 from numpy.random import random_integers, poisson
 
+import numpy as np
+
 project_settings, _, _ = load_settings()
 
 
@@ -39,3 +41,15 @@ def validation(func):
             if not is_valid:
                 print('###### Validation failed ######\n' + msg)
     return function_wrapper
+
+
+def discount(r, gamma=0.99, standardize=False):
+    """Takes 1d float array of rewards and computes discounted reward
+    e.g. f([1, 1, 1], 0.99) -> [1, 0.99, 0.9801]
+    taken from https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow
+    """
+    discounted = np.array([val * (gamma ** i) for i, val in enumerate(r)])
+    if standardize:
+        discounted -= np.mean(discounted)
+        discounted /= np.std(discounted)
+    return discounted

@@ -98,7 +98,10 @@ class UtterancePolicy(Policy):
     subsequently, the model prediction from the previous timestep is fed in as input at the next timestep,
     in order to predict the next symbol
     """
-    def __init__(self, hidden_state_size, entropy_reg=0.001):
+    def __init__(self, hidden_state_size, utterance_policy=False, entropy_reg=0.001):
+        if not utterance_policy:
+            # should return some dummy policy
+            pass
         self.model = Sequential([
             LSTM(hidden_state_size, input_shape=(100, 1))
         ])
@@ -171,13 +174,14 @@ class Agent:
         self.lambda_utterance = lambda_utterance
 
         # policies
-        self.termination_policy = TerminationPolicy(hidden_state_size)
-        self.utterance_policy = UtterancePolicy(hidden_state_size)
-        self.proposal_policy = ProposalPolicy(hidden_state_size)
-
         self.utterance_channel = utterance_channel
         self.utterance_len = utterance_len
         self.vocab_size = vocab_size
+
+        self.termination_policy = TerminationPolicy(hidden_state_size)
+        self.utterance_policy = UtterancePolicy(hidden_state_size, utterance_channel)
+        self.proposal_policy = ProposalPolicy(hidden_state_size)
+
 
         # NumberSequenceEncoders
         self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?

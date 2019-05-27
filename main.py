@@ -66,7 +66,7 @@ if __name__ == '__main__':
     game_settings = emergent.settings.GameSettings(
         batch_size=batch_size,
         test_batch_size=test_batch_size,
-        episode_num=episode_num
+        episode_num=episode_num,
     )
         # 'linguistic_channel': True,
         # # 'episode_num': 5 * 10 ^ 5
