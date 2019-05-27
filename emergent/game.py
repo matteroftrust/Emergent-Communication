@@ -46,19 +46,33 @@ class StateBatch:
         self.item_pools = np.zeros((batch_size, item_num), dtype='int32')
         self.rewards = np.zeros((batch_size, 2), dtype='int32')
         self.hidden_states = np.zeros((batch_size, max_trajectory_len, hidden_state_size), dtype='float32')
+        self.ns = np.zeros((batch_size,), dtype='int16')
 
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, max_trajectory_len=10):
         trajectory = np.flip(trajectory)  # so the last action is first, that will make the discounted rewards computations easier
+        print('what is n?????', n)
         self.trajectories[i][:n] = trajectory
         self.rewards[i] = rewards
         self.item_pools[i] = item_pool
         self.hidden_states[i] = hidden_states
+        self.ns[i] = n
 
     def compute_discounted_rewards(self, discount_factor):
         pass
 
     def save_log(self):
         pass
+
+    def convert_for_training(self):
+        x = self.hidden_states[0][:self.ns[0]]
+        print('what are you trajectory', self.trajectories[0])
+        y = np.array([action.terminate for action in self.trajectories[0][:self.ns[0]]])
+        y = np.reshape(y, (self.ns[0], 1))
+        print('shapes of convert!!!! x {}'.format(x.shape))
+        print('shapes of convert!!!! y {}'.format(y.shape))
+        sample_weight = np.array([self.rewards[0][0] for _ in range(self.ns[0])])
+        sample_weight = sample_weight.astype(int)
+        return x, y, sample_weight
 
 
 class Game:
@@ -78,7 +92,7 @@ class Game:
 
     def play(self):
         for i in range(self.episode_num):
-
+            # weights.append(self.agents[0].termination_policy.model.get_weights())
             if i % 50:
                 self.tests()  # experiment statistics
 
@@ -147,10 +161,20 @@ class Game:
         else:
             reward_proposer = 0
             reward_hearer = 0
+        print('what are the rewards? ', reward_proposer, reward_hearer)
         return reward_proposer, reward_hearer
 
     def tests(self):
         pass
 
     def reinforce(self, batch):
-        pass
+        x, y, sample_weight = batch.convert_for_training()
+        agent = self.agents[0]
+        print(agent.termination_policy)
+        # sample_weight = np.expand_dims(sample_weight, axis=1)
+        # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
+        print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
+        out = agent.termination_policy.train(x, y, sample_weight)
+        print('Reinforce done!!!!!')
+        print_all(out)
+        # print('weigths', np.sum(agent.termination_policy.model.get_weights()))

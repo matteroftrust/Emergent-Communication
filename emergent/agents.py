@@ -42,7 +42,7 @@ class Policy:
 
     @validation
     def input_is_valid(self, input):
-        expected_shape = (1, 100, 1)
+        expected_shape = (100,)
         is_valid = input.shape == expected_shape
         msg = '{} input invalid. Expected: {} received: {}'.format(self.__class__.__name__, expected_shape, input.shape)
         return is_valid, msg
@@ -62,12 +62,11 @@ class TerminationPolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(1, input_shape=(hidden_state_size, 1)),
+            Dense(1, input_shape=(hidden_state_size,)),
             # sigmoid()
             Activation('sigmoid')
         ])
         # takes (batch_size, hidden_state_size) vectors as input
-
         self.model.compile(optimizer='adam',
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
@@ -80,15 +79,19 @@ class TerminationPolicy(Policy):
 
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
-        confidence = self.model.predict(hidden_state) # this should return just a value or an array of values for a batch input
+        hidden_state = np.expand_dims(hidden_state, 0)
+        confidence = self.model.predict(hidden_state)
         print_all('TerminationPolicy output dim: {}'.format(confidence.shape))
-        confidence = np.mean(confidence)  # TODO this is completely wrong, I know
-        out = np.random.random() <= confidence # we sample with probability, TOOD should find something more elegant
+        out = np.random.random() <= confidence  # we sample with probability, TOOD should find something more elegant
         self.output_is_valid(out)
         return out
 
-    def train(self):
-        pass
+    def train(self, x, y, sample_weight):
+        print('what is x here? {}'.format(x.shape))
+        print('what is y here? {}'.format(y.shape))
+
+        out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
+        return out
 
 
 class UtterancePolicy(Policy):
@@ -115,10 +118,12 @@ class UtterancePolicy(Policy):
 
     def forward(self, hidden_state, utterance_channel=False):
         if not utterance_channel:
-            return self.dummy
-        self.input_is_valid(hidden_state)
-        utterance = self.model.predict(hidden_state)
-        self.output_is_valid(utterance, (6))
+            utterance = self.dummy
+        else:
+            hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
+            self.input_is_valid(hidden_state)
+            utterance = self.model.predict(hidden_state)
+        self.output_is_valid(utterance, (6,))
         return utterance
 
     def train(self):
@@ -144,6 +149,7 @@ class ProposalPolicy(Policy):
 
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
+        hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
         proposal = []
         for i in range(self.item_num):
             single_proposal = self.models[i].predict(hidden_state)
@@ -181,7 +187,6 @@ class Agent:
         self.termination_policy = TerminationPolicy(hidden_state_size)
         self.utterance_policy = UtterancePolicy(hidden_state_size, utterance_channel)
         self.proposal_policy = ProposalPolicy(hidden_state_size)
-
 
         # NumberSequenceEncoders
         self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?
@@ -221,7 +226,7 @@ class Agent:
         input = np.reshape(input, (1, 1500))
         print_all('hidden state : {}'.format(input.shape))
         hidden_state = self.core_layer(input)
-        hidden_state = np.expand_dims(hidden_state, axis=2)
+        hidden_state = np.reshape(hidden_state, (100,))
         print_all('hidden state after: {}'.format(hidden_state.shape))
 
         # hidden_state = np.expand_dims(hidden_state, axis=2)
