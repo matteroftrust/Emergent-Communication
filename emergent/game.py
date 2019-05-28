@@ -64,6 +64,7 @@ class StateBatch:
         pass
 
     def convert_for_training(self):
+        # TODO this should return stuff divided into to sets for two users
         x = self.hidden_states[0][:self.ns[0]]
         print('what are you trajectory', self.trajectories[0])
         y = np.array([action.terminate for action in self.trajectories[0][:self.ns[0]]])
@@ -178,3 +179,6 @@ class Game:
         print('Reinforce done!!!!!')
         print_all(out)
         # print('weigths', np.sum(agent.termination_policy.model.get_weights()))
+
+        # TODO:
+        # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
