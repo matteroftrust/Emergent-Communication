@@ -40,13 +40,15 @@ class StateBatch:
 
     def __init__(self, batch_size=game_settings.batch_size,
                  max_trajectory_len=10, item_num=game_settings.item_num,
-                 hidden_state_size=agent_settings.hidden_state_size):
+                 hidden_state_size=agent_settings.hidden_state_size, ids=[0, 1]):
 
         self.trajectories = np.empty((batch_size, max_trajectory_len), dtype=Action)
         self.item_pools = np.zeros((batch_size, item_num), dtype='int32')
         self.rewards = np.zeros((batch_size, 2), dtype='int32')
         self.hidden_states = np.zeros((batch_size, max_trajectory_len, hidden_state_size), dtype='float32')
         self.ns = np.zeros((batch_size,), dtype='int16')
+        # actually it might not be the best solution in terms of computation speed but it will make things more clear and simpler
+        self.ids = np.full((batch_size), fill_value=-1)  # we fill with -1 so we don't mess up with real ids
 
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, max_trajectory_len=10):
         trajectory = np.flip(trajectory)  # so the last action is first, that will make the discounted rewards computations easier
@@ -56,6 +58,7 @@ class StateBatch:
         self.item_pools[i] = item_pool
         self.hidden_states[i] = hidden_states
         self.ns[i] = n
+        # self.ids = np.array()
 
     def compute_discounted_rewards(self, discount_factor):
         pass
@@ -65,6 +68,11 @@ class StateBatch:
 
     def convert_for_training(self):
         # TODO this should return stuff divided into to sets for two users
+        # divide data into 2 agents
+        agent_ids = list(set([trajectory.proposed_by for trajectory in self.trajectories[0] if trajectory is not None]))
+
+        # for i in range(len(self.ns)):
+
         x = self.hidden_states[0][:self.ns[0]]
         print('what are you trajectory', self.trajectories[0])
         y = np.array([action.terminate for action in self.trajectories[0][:self.ns[0]]])

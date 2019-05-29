@@ -163,6 +163,21 @@ class ProposalPolicy(Policy):
         pass
 
 
+# class HiddenStateNetwork(Policy):
+#     """
+#     Formally, its not a policy be why wouldnt we inherit from Policy class if we can.
+#     """
+#     def __init__(self, vocab_size, utterance_len, hidden_state_size=100):
+#         self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?
+#         # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
+#         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
+#
+#         self.core_layer_model = Sequential([
+#             Dense(hidden_state_size, input_shape=(1500,), name="{}_dense".format(self.id)),
+#             Activation('relu'),
+#         ])
+#         self.core_layer = self.core_layer_model.predict
+
 class Agent:
 
     id_generator = itertools.count()
