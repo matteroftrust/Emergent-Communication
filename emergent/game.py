@@ -2,7 +2,7 @@ from numpy.random import random_integers
 import numpy as np
 
 from .settings import load_settings
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount
 
 project_settings, agent_settings, game_settings = load_settings()
 
@@ -41,32 +41,80 @@ class StateBatch:
     def __init__(self, batch_size=game_settings.batch_size,
                  max_trajectory_len=10, item_num=game_settings.item_num,
                  hidden_state_size=agent_settings.hidden_state_size, ids=[0, 1]):
-
-        self.trajectories = np.empty((batch_size, max_trajectory_len), dtype=Action)
+        trajectory_len = np.ceil(max_trajectory_len/2).astype(int)
+        self.trajectories_0 = np.empty((batch_size, trajectory_len), dtype=Action)
+        self.trajectories_1 = np.empty((batch_size, trajectory_len), dtype=Action)
         self.item_pools = np.zeros((batch_size, item_num), dtype='int32')
-        self.rewards = np.zeros((batch_size, 2), dtype='int32')
-        self.hidden_states = np.zeros((batch_size, max_trajectory_len, hidden_state_size), dtype='float32')
+        self.rewards_0 = np.zeros((batch_size,), dtype='int32')
+        self.rewards_1 = np.zeros((batch_size,), dtype='int32')
+        self.hidden_states_0 = np.zeros((batch_size, trajectory_len, hidden_state_size), dtype='float32')
+        self.hidden_states_1 = np.zeros((batch_size, trajectory_len, hidden_state_size), dtype='float32')
         self.ns = np.zeros((batch_size,), dtype='int16')
-        # actually it might not be the best solution in terms of computation speed but it will make things more clear and simpler
-        self.ids = np.full((batch_size), fill_value=-1)  # we fill with -1 so we don't mess up with real ids
 
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, max_trajectory_len=10):
-        trajectory = np.flip(trajectory)  # so the last action is first, that will make the discounted rewards computations easier
-        print('what is n?????', n)
-        self.trajectories[i][:n] = trajectory
-        self.rewards[i] = rewards
+        # trajectory = trajectory)  # so the last action is first, that will make the discounted rewards computations easier
+
+        # TODO: this is suuuper ugly
+        # to be changed earlier in negotiations which should return separate arrays for agents
+
+        trajectory_odd = trajectory[::2]
+        trajectory_even = trajectory[:1][::2]
+
+        hidden_states_odd = hidden_states[::2]
+        hidden_states_even = hidden_states[1:][::2]
+
+        is_first_0 = trajectory[0].proposed_by == 0
+        if is_first_0:  # agent 0 gets odd
+            self.trajectories_0[0][:len(trajectory_odd)] = np.flip(trajectory_odd)
+            self.trajectories_1[0][:len(trajectory_even)] = np.flip(trajectory_even)
+            self.hidden_states_0[0][:len(hidden_states_odd)] = np.flip(hidden_states_odd)
+            self.hidden_states_1[0][:len(hidden_states_even)] = np.flip(hidden_states_even)
+        else:  # == 1
+            self.trajectories_0[0][:len(trajectory_even)] = trajectory_even
+            self.trajectories_1[0][:len(trajectory_odd)] = trajectory_odd
+            self.hidden_states_0[0][:len(hidden_states_even)] = hidden_states_even
+            self.hidden_states_1[0][:len(hidden_states_odd)] = hidden_states_odd
+
+        self.rewards_0[i] = rewards[not is_first_0]
+        self.rewards_1[i] = rewards[is_first_0]
+
         self.item_pools[i] = item_pool
-        self.hidden_states[i] = hidden_states
-        self.ns[i] = n
+        self.ns[i] = n  # do we even need this now?
         # self.ids = np.array()
 
-    def compute_discounted_rewards(self, discount_factor):
-        pass
+    @classmethod
+    def compute_discounted_rewards(self, trajectory, discount_factor=0.99):
+        trajectory = trajectory[~np.isnan(trajectory)]  # removing None vals
+        return discount(trajectory, discount_factor), trajectory
 
     def save_log(self):
         pass
 
     def convert_for_training(self):
+        x_0 = np.array([])
+        x_1 = np.array([])
+
+        rewards_0 = np.array([])
+        rewards_1 = np.array([])
+
+        for i in len(self.ns):
+            trajectory_0, discount_rewards_0 = self.compute_discounted_rewards(self.trajectories_0[i], self.rewards[i][0])
+            trajectory_1, discount_rewards_1 = self.compute_discounted_rewards(self.trajectories_1[i], self.rewards[i][1])
+            np.append(x_0, trajectory_0)
+            np.append(x_1, trajectory_1)
+        y_0 = np.flatten(self.hidden_states_0)
+        y_1 = np.flatten(self.hidden_states_1)
+
+        y_0 = y_0[~np.isnan(y_0)]
+        y_1 = y_1[~np.isnan(y_1)]
+
+        # TODO: rewards need reguralization
+        print('checking dimensions')
+        print('agent0, x_0 {} y_0 {}, rewards_0 {}'.format(x_0.shape, y_0.shape, rewards_0.shape))
+        print('agent0, x_1 {} y_1 {}, rewards_1 {}'.format(x_1.shape, y_1.shape, rewards_1.shape))
+        return
+
+    def convert_for_training_old(self):
         # TODO this should return stuff divided into to sets for two users
         # divide data into 2 agents
         agent_ids = list(set([trajectory.proposed_by for trajectory in self.trajectories[0] if trajectory is not None]))
