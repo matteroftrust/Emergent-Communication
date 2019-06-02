@@ -254,6 +254,12 @@ class Agent:
 
         return action, hidden_state
 
+    def train(self, x, rewards, y_termination, y_proposal, y_utterance=None):
+        self.termination_policy.train(x, y_termination, rewards)
+        self.proposal_policy.train(x, y_proposal, rewards)
+        if y_utterance:
+            self.utterance_policy.train(x, y_utterance, rewards)
+
     def reward(self, reward):
         pass
 

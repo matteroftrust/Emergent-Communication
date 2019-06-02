@@ -65,10 +65,10 @@ class StateBatch:
 
         is_first_0 = trajectory[0].proposed_by == 0
         if is_first_0:  # agent 0 gets odd
-            self.trajectories_0[0][:len(trajectory_odd)] = np.flip(trajectory_odd)
-            self.trajectories_1[0][:len(trajectory_even)] = np.flip(trajectory_even)
-            self.hidden_states_0[0][:len(hidden_states_odd)] = np.flip(hidden_states_odd)
-            self.hidden_states_1[0][:len(hidden_states_even)] = np.flip(hidden_states_even)
+            self.trajectories_0[0][:len(trajectory_odd)] = np.flip(trajectory_odd, axis=0)
+            self.trajectories_1[0][:len(trajectory_even)] = np.flip(trajectory_even, axis=0)
+            self.hidden_states_0[0][:len(hidden_states_odd)] = np.flip(hidden_states_odd, axis=0)
+            self.hidden_states_1[0][:len(hidden_states_even)] = np.flip(hidden_states_even, axis=0)
         else:  # == 1
             self.trajectories_0[0][:len(trajectory_even)] = trajectory_even
             self.trajectories_1[0][:len(trajectory_odd)] = trajectory_odd
@@ -83,36 +83,49 @@ class StateBatch:
         # self.ids = np.array()
 
     @classmethod
-    def compute_discounted_rewards(self, trajectory, discount_factor=0.99):
-        trajectory = trajectory[~np.isnan(trajectory)]  # removing None vals
-        return discount(trajectory, discount_factor), trajectory
+    def compute_discounted_rewards(self, trajectory, reward, discount_factor=0.99):
+        # TODO: the one below is ugly but isnan doesnt work
+
+        mask = [action is not None for action in trajectory]
+        trajectory = trajectory[mask]
+        # trajectory = trajectory[~np.isnan(trajectory, dtype=Action)]  # removing None vals
+
+        input = np.ones(len(trajectory), reward) * reward
+        return discount(input, discount_factor), trajectory
 
     def save_log(self):
         pass
 
     def convert_for_training(self):
-        x_0 = np.array([])
-        x_1 = np.array([])
+        # x_0 = np.array([])
+        # x_1 = np.array([])
+
+        y_proposal_0 = np.array([])
+        y_proposal_1 = np.array([])
 
         rewards_0 = np.array([])
         rewards_1 = np.array([])
 
-        for i in len(self.ns):
-            trajectory_0, discount_rewards_0 = self.compute_discounted_rewards(self.trajectories_0[i], self.rewards[i][0])
-            trajectory_1, discount_rewards_1 = self.compute_discounted_rewards(self.trajectories_1[i], self.rewards[i][1])
+        for i in range(len(self.ns)):
+            trajectory_0, discount_rewards_0 = self.compute_discounted_rewards(self.trajectories_0[i], self.rewards_0[i])
+            trajectory_1, discount_rewards_1 = self.compute_discounted_rewards(self.trajectories_1[i], self.rewards_1[i])
             np.append(x_0, trajectory_0)
             np.append(x_1, trajectory_1)
-        y_0 = np.flatten(self.hidden_states_0)
-        y_1 = np.flatten(self.hidden_states_1)
+        # y_0 = np.flatten(self.hidden_states_0)
+        # y_1 = np.flatten(self.hidden_states_1)
+        y_0 = self.hidden_states_0.flatten()
+        y_1 = self.hidden_states_1.flatten()
 
-        y_0 = y_0[~np.isnan(y_0)]
-        y_1 = y_1[~np.isnan(y_1)]
+        y_termination_0 = y_0[~np.isnan(y_0)]
+        y_termination_1 = y_1[~np.isnan(y_1)]
+
+        print('trajectories shale {}'.format(self.trajectories_0.shape))
 
         # TODO: rewards need reguralization
         print('checking dimensions')
         print('agent0, x_0 {} y_0 {}, rewards_0 {}'.format(x_0.shape, y_0.shape, rewards_0.shape))
         print('agent0, x_1 {} y_1 {}, rewards_1 {}'.format(x_1.shape, y_1.shape, rewards_1.shape))
-        return
+        return x_0, y_termination_0, rewards_0
 
     def convert_for_training_old(self):
         # TODO this should return stuff divided into to sets for two users
@@ -175,8 +188,6 @@ class Game:
 
             batch.append(i, n, negotiations, rewards, item_pool, hidden_states)
 
-        print('bath_item_pool {} batch_negotiations {} batch_rewards {}'.format(batch.item_pools.shape, batch.trajectories.shape, batch.rewards.shape))
-        print_all('batch trajectory for {}:'.format(i, batch.trajectories[i]))
         # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
         return batch
@@ -227,13 +238,17 @@ class Game:
     def reinforce(self, batch):
         x, y, sample_weight = batch.convert_for_training()
         agent = self.agents[0]
-        print(agent.termination_policy)
         # sample_weight = np.expand_dims(sample_weight, axis=1)
         # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
         print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
         out = agent.termination_policy.train(x, y, sample_weight)
         print('Reinforce done!!!!!')
         print_all(out)
+
+        # TerminationPolicy takes boolean as y
+        # ProposalPolicy takes action.proposal as y
+        # UtterancePolicy takes action.utterance as y if utterance channel is on
+
         # print('weigths', np.sum(agent.termination_policy.model.get_weights()))
 
         # TODO:
