@@ -77,6 +77,16 @@ class TerminationPolicy(Policy):
         msg = '{} output invalid. Expected: {} received: {}'.format(self.__class__.__name__, type(output), 'boolean')
         return is_valid, msg
 
+    # @validation
+    # def train_batch_is_valid(self, x, y, sample_weight):
+    #     msg = ''
+    #     if x.shape[0] != 100:
+    #         msg += 'Invalid shape of x. Expected {} received (100,)\n'.format(x.shape)
+    #     if y.shape[0] != 1:
+    #         msg += 'Invalid shape of x. Expected {} received (1,)\n'.format(x.shape)
+    #     if x.shape[0] != 100:
+    #         msg += 'Invalid shape of x. Expected {} received (100,)\n'.format(x.shape)
+
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
         hidden_state = np.expand_dims(hidden_state, 0)
