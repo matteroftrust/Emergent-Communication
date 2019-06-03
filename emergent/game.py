@@ -64,31 +64,19 @@ class StateBatch:
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, max_trajectory_len=10):
         # trajectory = trajectory)  # so the last action is first, that will make the discounted rewards computations easier
 
-        # TODO: this is suuuper ugly
-        # to be changed earlier in negotiations which should return separate arrays for agents
-
-        # print('what comes from episode?\n')
-        # print('trajectory type {} shape {}'.format(type(trajectory), np.array(trajectory).shape))
-        # print('hidden_states shape {}'.format(np.array(hidden_states).shape))
-        #
-        # print('in statebatch what is hidden state', np.array(hidden_states).shape)
-        # print('in statebatch wat is hidden state self', len(self.hidden_states_0))
-
         hidden_states = [HiddenState(hs) for hs in hidden_states]
-        print('what are hidden_states here///////??', hidden_states)
         trajectory_odd = trajectory[::2]
         trajectory_even = trajectory[:1][::2]
 
         hidden_states_odd = hidden_states[::2]
-        hidden_states_even = hidden_states[1:][::2]
+        hidden_states_even = hidden_states[:1][::2]
 
         hidden_states_odd.reverse()
         hidden_states_even.reverse()
         trajectory_odd.reverse()
         trajectory_even.reverse()
-
-        print('what is in hs odd shape {} type {}'.format(np.array(hidden_states_odd).shape, type(hidden_states_odd)))
-        print('what is in hs even shape {} is empty list? {}'.format(np.array(hidden_states_even).shape, hidden_states_even == []))
+        # print('what is in hs odd shape {} type {}'.format(np.array(hidden_states_odd).shape, type(hidden_states_odd)))
+        # print('what is in hs even shape {} is empty list? {}'.format(np.array(hidden_states_even).shape, hidden_states_even == []))
 
         # print('statbatc in append hssod: {} hsseven:: {}'.format(np.array(hidden_states_odd).shape, np.array(hidden_states_even).shape))
 
@@ -100,28 +88,17 @@ class StateBatch:
             self.hidden_states_0.append(hidden_states_odd)
             self.hidden_states_1.append(hidden_states_even)
 
-            # self.trajectories_0.append(np.flip(trajectory_odd))
-            # self.trajectories_1.append(np.flip(trajectory_even))
-            # self.hidden_states_0.append(np.flip(hidden_states_odd))
-            # self.hidden_states_1.append(np.flip(hidden_states_even))
-
         else:  # == 1
             self.trajectories_0.append(trajectory_even)
             self.trajectories_1.append(trajectory_odd)
             self.hidden_states_0.append(hidden_states_even)
             self.hidden_states_1.append(hidden_states_odd)
 
-            # self.trajectories_0.append(np.flip(trajectory_even))
-            # self.trajectories_1.append(np.flip(trajectory_odd))
-            # self.hidden_states_0.append(np.flip(hidden_states_even))
-            # self.hidden_states_1.append(np.flip(hidden_states_odd))
-
         self.rewards_0.append(rewards[not is_first_0])
         self.rewards_1.append(rewards[is_first_0])
 
         self.item_pools.append(item_pool)
         self.ns.append(n)  # do we even need this now?
-        # self.ids = np.array()
         # print('in statebatch wat is hidden state self after', len(self.hidden_states_0))
 
     @classmethod
@@ -147,12 +124,6 @@ class StateBatch:
         rewards_0 = []
         rewards_1 = []
 
-        # for i in range(len(self.ns)):
-        #     len()
-        #     trajectory_0, discount_rewards_0 = self.compute_discounted_rewards(self.trajectories_0[i], self.rewards_0[i])
-        #     trajectory_1, discount_rewards_1 = self.compute_discounted_rewards(self.trajectories_1[i], self.rewards_1[i])
-        #     np.append(x_0, trajectory_0)
-        #     np.append(x_1, trajectory_1)
         for i in range(len(self.ns)):
             t_0_len = len(self.trajectories_0[i])
             t_1_len = len(self.trajectories_1[i])
@@ -168,44 +139,22 @@ class StateBatch:
             rewards_0.append(trajectory_rewards_0)
             rewards_1.append(trajectory_rewards_1)
 
-        rewards_0 = np.array(rewards_0).flatten()
-        rewards_1 = np.array(rewards_1).flatten()
-        # y_0 = np.flatten(self.hidden_states_0)
-        # y_1 = np.flatten(self.hidden_states_1)
-        # print('straight from statebatch x0 {} x1{}'.format(np.array(self.hidden_states_0).shape, np.array(self.hidden_states_1).shape))
-
-        # print('what aare the shapes? x0 {} x1 {}'.format(x0_shape, x1_shape))
-        print('is it about to go through?')
-        # print('trajectories_0', self.trajectories_0)
-        # print('y trajectories', self.trajectories_0)
-        # print('1 trajectories', self.trajectories_1)
+        rewards_0 = flatten(rewards_0)
+        rewards_1 = flatten(rewards_1)
 
         def print_trajectory(t, name):
             print('\n{}\n'.format(name))
             for elem in t:
                 print(elem, type(elem))
 
-        # print_trajectory(np.array(self.trajectories_0).flatten(), 'traje 0')
-        # print_trajectory(self.trajectories_1, 'traje 1')
-
         y_termination_0 = flatten(self.trajectories_0)
         y_termination_1 = flatten(self.trajectories_1)
-        # y_termination_0 = np.array([t[0].terminate for t in self.trajectories_0])
-        # y_termination_1 = np.array([t[0].terminate for t in self.trajectories_1])
 
-        # print_trajectory(y_termination_0, 'y term 0')
-
-        print('went through!')
-
-        # print('this i x_0 but whyyyy', type(x_0), type(x_0[0]))
-
-        # y_termination_0 = np.array([trajectory.terminate for trajectory in np.array(self.trajectories_0).flatten()])
-        # y_termination_1 = np.array([trajectory.terminate for trajectory in np.array(self.trajectories_1).flatten()])
+        y_termination_0 = np.array([elem.terminate for elem in y_termination_0])
+        y_termination_1 = np.array([elem.terminate for elem in y_termination_1])
 
         # TODO: rewards need reguralization
-        # print('checking dimensions in convert_for_training')
-        # print('agent0, x_0 {} y_0 {}, rewards_0 {}'.format(x_0.shape, y_termination_0.shape, rewards_0.shape))
-        # print('agent0, x_1 {} y_1 {}, rewards_1 {}'.format(x_1.shape, y_termination_1.shape, rewards_1.shape))
+
         x_0 = flatten(self.hidden_states_0)
         x_1 = flatten(self.hidden_states_1)
 
@@ -220,9 +169,8 @@ class StateBatch:
         x_0 = unpack(x_0)
         x_1 = unpack(x_1)
 
-        print('what is the shave of x0 {} y0 {}'.format(x_0.shape, y_termination_0.shape))
-        print('what is the shave of x1 {} y1 {}'.format(x_1.shape, y_termination_1.shape))
-
+        # print('what is the shave of x0 {} y0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, rewards_0.shape))
+        # print('what is the shave of x1 {} y1 {} r1 {}'.format(x_1.shape, y_termination_1.shape, rewards_1.shape))
 
         return x_0, y_termination_0, rewards_0
 
@@ -285,7 +233,7 @@ class Game:
             item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time)
 
             if n == 1:
-                print('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
+                print_all('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
                 # TODO thats actually a problem we should solve. If agent terminates after dummy message we dont have a hidden state for the second agent
                 continue
             batch.append(i, n, negotiations, rewards, item_pool, hidden_states)
@@ -310,7 +258,6 @@ class Game:
             action, hidden_state = proposer.propose(context, action.utterance, action.proposal)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
-            # print('what the hell is a hidden state here?????', np.array(hidden_state).shape)
             print_all('we are in t: {} and action is {}'.format(t, action))
 
             if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
@@ -336,7 +283,6 @@ class Game:
         else:
             reward_proposer = 0
             reward_hearer = 0
-        print('what are the rewards? ', reward_proposer, reward_hearer)
         return reward_proposer, reward_hearer
 
     def tests(self):
