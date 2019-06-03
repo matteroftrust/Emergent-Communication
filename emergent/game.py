@@ -2,7 +2,7 @@ from numpy.random import random_integers
 import numpy as np
 
 from .settings import load_settings
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten
 
 project_settings, agent_settings, game_settings = load_settings()
 
@@ -35,6 +35,7 @@ class HiddenState:
 
     def __repr__(self):
         return 'hidden_state'
+
 
 class StateBatch:
     """
@@ -172,8 +173,6 @@ class StateBatch:
         # y_0 = np.flatten(self.hidden_states_0)
         # y_1 = np.flatten(self.hidden_states_1)
         # print('straight from statebatch x0 {} x1{}'.format(np.array(self.hidden_states_0).shape, np.array(self.hidden_states_1).shape))
-        x_0 = self.hidden_states_0  # maybe it can be done with just array initialization with some 1D param
-        x_1 = np.array(self.hidden_states_1)
 
         # print('what aare the shapes? x0 {} x1 {}'.format(x0_shape, x1_shape))
         print('is it about to go through?')
@@ -189,15 +188,16 @@ class StateBatch:
         # print_trajectory(np.array(self.trajectories_0).flatten(), 'traje 0')
         # print_trajectory(self.trajectories_1, 'traje 1')
 
-        y_termination_0 = np.array([t[0].terminate for t in self.trajectories_0])
-        y_termination_1 = np.array([t[0].terminate for t in self.trajectories_1])
+        y_termination_0 = flatten(self.trajectories_0)
+        y_termination_1 = flatten(self.trajectories_1)
+        # y_termination_0 = np.array([t[0].terminate for t in self.trajectories_0])
+        # y_termination_1 = np.array([t[0].terminate for t in self.trajectories_1])
 
         # print_trajectory(y_termination_0, 'y term 0')
 
         print('went through!')
 
-
-        print('this i x_0 but whyyyy', type(x_0), type(x_0[0]))
+        # print('this i x_0 but whyyyy', type(x_0), type(x_0[0]))
 
         # y_termination_0 = np.array([trajectory.terminate for trajectory in np.array(self.trajectories_0).flatten()])
         # y_termination_1 = np.array([trajectory.terminate for trajectory in np.array(self.trajectories_1).flatten()])
@@ -206,8 +206,24 @@ class StateBatch:
         # print('checking dimensions in convert_for_training')
         # print('agent0, x_0 {} y_0 {}, rewards_0 {}'.format(x_0.shape, y_termination_0.shape, rewards_0.shape))
         # print('agent0, x_1 {} y_1 {}, rewards_1 {}'.format(x_1.shape, y_termination_1.shape, rewards_1.shape))
-        print('x_0!!!!')
-        print(x_0)
+        x_0 = flatten(self.hidden_states_0)
+        x_1 = flatten(self.hidden_states_1)
+
+        # print_trajectory(x_0, 'wtf xo')
+
+        def unpack(arr):
+            new_arr = []
+            for hs in arr:
+                new_arr.append(hs.hs)
+            return np.array(new_arr)
+
+        x_0 = unpack(x_0)
+        x_1 = unpack(x_1)
+
+        print('what is the shave of x0 {} y0 {}'.format(x_0.shape, y_termination_0.shape))
+        print('what is the shave of x1 {} y1 {}'.format(x_1.shape, y_termination_1.shape))
+
+
         return x_0, y_termination_0, rewards_0
 
     """def convert_for_training_old(self):

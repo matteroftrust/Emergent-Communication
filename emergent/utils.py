@@ -53,3 +53,7 @@ def discount(r, gamma=0.99, standardize=False):
         discounted -= np.mean(discounted)
         discounted /= np.std(discounted)
     return discounted
+
+
+def flatten(arr):
+    return np.array([elem for sublist in arr for elem in sublist])
