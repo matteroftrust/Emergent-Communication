@@ -73,3 +73,10 @@ def print_trajectory(t, name):
     print('\n{}\n'.format(name))
     for elem in t:
         print(elem, type(elem))
+
+
+def convert_to_sparse(arr, n):
+    out = np.zeros((len(arr), n), dtype=int)
+    for i, row in enumerate(out):
+        row[arr[i]] = 1
+    return out

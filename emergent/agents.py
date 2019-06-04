@@ -4,7 +4,7 @@ import numpy as np
 
 from .game import Action
 from .settings import load_settings
-from .utils import print_all, print_status, validation
+from .utils import print_all, print_status, validation, convert_to_sparse
 
 from keras.activations import sigmoid
 from keras.layers import Dense, Activation
@@ -113,7 +113,7 @@ class UtterancePolicy(Policy):
             # should return some dummy policy
             pass
         self.model = Sequential([
-            LSTM(hidden_state_size, input_shape=(100, 1))
+            LSTM(hidden_state_size, input_shape=(hidden_state_size, 1))
         ])
         self.model.compile(optimizer='adam',
                            loss='mse',  # TODO these are random, needs to be checked
@@ -147,7 +147,8 @@ class ProposalPolicy(Policy):
         self.models = []
         for _ in range(self.item_num):
             model = Sequential([
-                LSTM(1, input_shape=(hidden_state_size, 1))
+                Dense(6, input_shape=(hidden_state_size,)),
+                Activation('softmax')
             ])
             model.compile(optimizer='adam',
                           loss='mse',  # TODO these are random, needs to be checked
@@ -156,11 +157,11 @@ class ProposalPolicy(Policy):
 
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
-        hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
+        hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
         for i in range(self.item_num):
-            single_proposal = self.models[i].predict(hidden_state)
-            single_proposal = int(single_proposal)
+            distribution = self.models[i].predict(hidden_state)
+            single_proposal = np.random.choice(np.arange(6), p=distribution[0])
             proposal.append(single_proposal)
         out = np.array(proposal)
         self.output_is_valid(out, (3,))
@@ -169,9 +170,9 @@ class ProposalPolicy(Policy):
     def train(self, x, y, sample_weight):
         # print('train proposal policy shape x {} y {} sam {}'.format(x.shape, y.shape, sample_weight.shape))
 
-        x = np.expand_dims(x, 2)
+        # x = np.expand_dims(x, 2)
         for i in range(self.item_num):
-            self.models[i].train_on_batch(x, y[:, i], sample_weight=sample_weight)
+            self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
 
 # class HiddenStateNetwork(Policy):
 #     """
@@ -187,6 +188,7 @@ class ProposalPolicy(Policy):
 #             Activation('relu'),
 #         ])
 #         self.core_layer = self.core_layer_model.predict
+
 
 class Agent:
 
