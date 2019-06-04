@@ -97,9 +97,6 @@ class TerminationPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
-        print('what is x here? {}'.format(x.shape))
-        print('what is y here? {}'.format(y.shape))
-
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
         return out
 
@@ -169,9 +166,12 @@ class ProposalPolicy(Policy):
         self.output_is_valid(out, (3,))
         return out
 
-    def train(self, ):
-        pass
+    def train(self, x, y, sample_weight):
+        # print('train proposal policy shape x {} y {} sam {}'.format(x.shape, y.shape, sample_weight.shape))
 
+        x = np.expand_dims(x, 2)
+        for i in range(self.item_num):
+            self.models[i].train_on_batch(x, y[:, i], sample_weight=sample_weight)
 
 # class HiddenStateNetwork(Policy):
 #     """
