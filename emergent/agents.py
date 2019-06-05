@@ -11,6 +11,7 @@ from keras.layers import Dense, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
+from keras.optimizers import SGD
 
 
 project_settings, agent_settings, game_settings = load_settings()
@@ -74,7 +75,7 @@ class TerminationPolicy(Policy):
     @validation
     def output_is_valid(self, output):
         is_valid = type(output) in [bool, np.bool, np.bool_]
-        msg = '{} output invalid. Expected: {} received: {}'.format(self.__class__.__name__, type(output), 'boolean')
+        msg = '{} output invalid. Expected: {} received: {}'.format(self.__class__.__name__, 'boolean', type(output))
         return is_valid, msg
 
     # @validation
@@ -90,14 +91,19 @@ class TerminationPolicy(Policy):
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
         hidden_state = np.expand_dims(hidden_state, 0)
-        confidence = self.model.predict(hidden_state)
-        print_all('TerminationPolicy output dim: {}'.format(confidence.shape))
-        out = np.random.random() <= confidence  # we sample with probability, TOOD should find something more elegant
+        confidence = self.model.predict(hidden_state)[0][0]
+        if np.isnan(confidence):
+            print('whattheeeoo termination forward returns nan!')
+            print(self.model.get_weights())
+        # out = np.random.random() <= confidence  # we sample with probability, TOOD should find something more elegant
+        out = np.random.choice([True, False], p=[confidence, 1 - confidence])
         self.output_is_valid(out)
         return out
 
     def train(self, x, y, sample_weight):
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
+        if np.isnan(self.model.get_weights()[0].any()):
+            print('this traininng went wronngggg!!!')
         return out
 
 
@@ -150,9 +156,17 @@ class ProposalPolicy(Policy):
                 Dense(6, input_shape=(hidden_state_size,)),
                 Activation('softmax')
             ])
-            model.compile(optimizer='adam',
-                          loss='mse',  # TODO these are random, needs to be checked
+            # model.compile(optimizer='adam',
+            #               loss='mse',  # TODO these are random, needs to be checked
+            #               metrics=['accuracy']
+
+            sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
+            model.compile(loss='categorical_crossentropy',
+                          optimizer=sgd,
                           metrics=['accuracy'])
+
+            # model.compile = optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+
             self.models.append(model)
 
     def forward(self, hidden_state):

@@ -144,8 +144,13 @@ class StateBatch:
         x_0 = unpack(x_0)
         x_1 = unpack(x_1)
 
+        print_all('This goes to reinfoce:')
         print_all('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
+
+        print('\nWWWWWWWwhat is going on here???????\n')
+        for elem in [x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1]:
+            print(elem, '\n')
 
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1
 
@@ -248,6 +253,9 @@ class Game:
 
     def reinforce(self, batch):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()
+        if len(x_0) == 0:
+            print('No data for reinforce')
+            return
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
         # sample_weight = np.expand_dims(sample_weight, axis=1)
