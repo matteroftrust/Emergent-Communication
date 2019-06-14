@@ -1,6 +1,7 @@
 from numpy.random import random_integers
 import itertools
 import numpy as np
+import time
 
 from .game import Action
 from .settings import load_settings
@@ -13,8 +14,11 @@ from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 from keras.optimizers import SGD
 
+from keras.callbacks import TensorBoard
+
 
 project_settings, agent_settings, game_settings = load_settings()
+# tensorboard = TensorBoard(log_dir='logs/{}'.format(time()))
 
 
 class NumberSequenceEncoder:
@@ -68,8 +72,14 @@ class TerminationPolicy(Policy):
             Activation('sigmoid')
         ])
         # takes (batch_size, hidden_state_size) vectors as input
-        self.model.compile(optimizer='adam',
-                           loss='binary_crossentropy',  # TODO these are random, needs to be checked
+        # self.model.compile(optimizer='adam',
+        #                    loss='binary_crossentropy',  # TODO these are random, needs to be checked
+        #                    metrics=['accuracy'])
+        sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
+        # self.model.compile(loss='categorical_crossentropy',
+        self.model.compile(loss='mean_squared_error',
+
+                           optimizer=sgd,
                            metrics=['accuracy'])
 
     @validation
@@ -94,7 +104,6 @@ class TerminationPolicy(Policy):
         confidence = self.model.predict(hidden_state)[0][0]
         if np.isnan(confidence):
             print('whattheeeoo termination forward returns nan!')
-            print(self.model.get_weights())
         # out = np.random.random() <= confidence  # we sample with probability, TOOD should find something more elegant
         out = np.random.choice([True, False], p=[confidence, 1 - confidence])
         self.output_is_valid(out)

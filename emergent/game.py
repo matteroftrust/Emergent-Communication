@@ -148,9 +148,9 @@ class StateBatch:
         print_all('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
-        print('\nWWWWWWWwhat is going on here???????\n')
+        print('\nprinting everything that goes to reinforce\n')
         for elem in [x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1]:
-            print(elem, '\n')
+            print(elem, type(elem), '\n')
 
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1
 
@@ -184,10 +184,12 @@ class Game:
 
     def next_episode(self):
         batch = StateBatch()
+        print('agent 0 weights:')
+        print('termintation policy weights', self.agents[0].termination_policy.model.get_weights()[:5])
+        # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         for i in range(self.batch_size):
-
-            # beginning of new round. item pool and utility funcions generation
             print_status('Starting batch {}'.format(i))
+            # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()
             negotiation_time = generate_negotiation_time()
             for agent in self.agents:
@@ -268,8 +270,8 @@ class Game:
         print_all(out_0)
         print_all(out_1)
 
-        out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
-        out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
+        # out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
+        # out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
 
         print('Reinforce done!!!!!')
 
