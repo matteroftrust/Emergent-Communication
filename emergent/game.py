@@ -2,7 +2,7 @@ from numpy.random import random_integers
 import numpy as np
 
 from .settings import load_settings
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
 
 project_settings, agent_settings, game_settings = load_settings()
 
@@ -149,8 +149,8 @@ class StateBatch:
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         print('\nprinting everything that goes to reinforce\n')
-        for elem in [x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1]:
-            print(elem, type(elem), '\n')
+        for elem, name in zip([x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1], ['x_0', 'x_1', 'y_termination_0', 'y_termination_1', 'y_proposal_0', 'y_proposal_1', 'rewards_0', 'rewards_1']):
+            print(name, elem, type(elem), '\n')
 
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1
 
@@ -264,11 +264,13 @@ class Game:
         # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
         # print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
 
+        print('grad???')
+        print(get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
         out_0 = agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
         out_1 = agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
 
-        print_all(out_0)
-        print_all(out_1)
+        print('train termination for 0 {}'.format(out_0))
+        print('train termination for 1 {}'.format(out_1))
 
         # out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
         # out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)

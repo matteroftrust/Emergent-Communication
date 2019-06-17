@@ -1,5 +1,6 @@
 from .settings import load_settings
 from numpy.random import random_integers, poisson
+from keras import backend as K
 
 import numpy as np
 
@@ -80,3 +81,14 @@ def convert_to_sparse(arr, n):
     for i, row in enumerate(out):
         row[arr[i]] = 1
     return out
+
+
+def get_weight_grad(model, inputs, outputs):
+    #  https://stackoverflow.com/questions/51140950/how-to-obtain-the-gradients-in-keras
+    """ Gets gradient of model for given inputs and outputs for all weights"""
+    grads = model.optimizer.get_gradients(model.total_loss, model.trainable_weights)
+    symb_inputs = (model._feed_inputs + model._feed_targets + model._feed_sample_weights)
+    f = K.function(symb_inputs, grads)
+    x, y, sample_weight = model._standardize_user_data(inputs, outputs)
+    output_grad = f(x + y + sample_weight)
+    return output_grad
