@@ -255,6 +255,8 @@ class Game:
 
     def reinforce(self, batch):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()
+        if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
+            return
         if len(x_0) == 0:
             print('No data for reinforce')
             return
@@ -264,13 +266,13 @@ class Game:
         # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
         # print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
 
-        print('grad???')
-        print(get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
+        # print('grad???')
+        # print(get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
         out_0 = agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
         out_1 = agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
 
-        print('train termination for 0 {}'.format(out_0))
-        print('train termination for 1 {}'.format(out_1))
+        # print('train termination for 0 {}'.format(out_0))
+        # print('train termination for 1 {}'.format(out_1))
 
         # out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
         # out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)

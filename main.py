@@ -3,8 +3,8 @@ import argparse
 import os
 import keras
 
-keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=32, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0,
-                            embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')
+# keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=32, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0,
+#                             embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
