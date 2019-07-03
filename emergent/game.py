@@ -274,11 +274,10 @@ class Game:
         # print('train termination for 0 {}'.format(out_0))
         # print('train termination for 1 {}'.format(out_1))
 
-        # out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
-        # out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
+        out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
+        out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
 
         print('Reinforce done!!!!!')
-
 
         # TerminationPolicy takes boolean as y
         # ProposalPolicy takes action.proposal as y
