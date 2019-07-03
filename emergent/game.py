@@ -1,5 +1,8 @@
 from numpy.random import random_integers
 import numpy as np
+import pandas as pd
+import pickle as pkl
+from datetime import datetime as dt
 
 from .settings import load_settings
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
@@ -95,6 +98,14 @@ class StateBatch:
         self.item_pools.append(item_pool)
         self.ns.append(n)  # do we even need this now? maybe for regularization later?
 
+    def concatenate(self, batch):
+        self.trajectories_0.append(batch.trajectories_0)
+        self.trajectories_1.append(batch.trajectories_1)
+        self.item_pools.append(batch.item_pools)
+        self.rewards_0.append(batch.rewards_0)
+        self.rewards_1.append(batch.rewards_1)
+        self.ns.append(batch.ns)
+
     @classmethod
     def compute_discounted_rewards(self, trajectory, reward, discount_factor=0.99):
 
@@ -168,21 +179,29 @@ class Game:
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
+
         # print('batchsize in statebatch which is from game init: {}'.format(batch_size))
 
     def play(self):
+        # columns = ['item_pool', 'reward_0', 'reward_1']
+        results = []
+
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
             if i % 50:
-                self.tests()  # experiment statistics
+                test_batch = self.tests()  # experiment statistics
+                results.append([i, test_batch])
 
             print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch = self.next_episode()
             # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
 
             self.reinforce(batch)
+        now = dt.now()
+        with open('results/results{}.pkl'.format(str(now)), 'wb') as handle:
+            pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
-    def next_episode(self):
+    def next_episode(self, test=False):
         batch = StateBatch()
         print('agent 0 weights:')
         print('termintation policy weights', self.agents[0].termination_policy.model.get_weights()[:5])
@@ -195,7 +214,7 @@ class Game:
             for agent in self.agents:
                 agent.generate_util_fun()
 
-            item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time)
+            item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
 
             if n == 1:
                 print_all('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
@@ -207,7 +226,7 @@ class Game:
 
         return batch
 
-    def negotiations(self, item_pool, n):
+    def negotiations(self, item_pool, n, test=False):
         action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
@@ -220,7 +239,7 @@ class Game:
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
 
             context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state = proposer.propose(context, action.utterance, action.proposal)  # if communication channel is closed utterance is a dummy
+            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, test=test)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
             print_all('we are in t: {} and action is {}'.format(t, action))
@@ -251,7 +270,14 @@ class Game:
         return reward_proposer, reward_hearer
 
     def tests(self):
-        pass
+        """
+        Runs 5 test batches without training.
+        """
+        test_batch = StateBatch()
+        for i in range(5):
+            batch = self.next_episode(test=True)
+            test_batch.concatenate(batch)
+        return test_batch
 
     def reinforce(self, batch):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()

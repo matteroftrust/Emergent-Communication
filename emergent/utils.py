@@ -7,6 +7,13 @@ import numpy as np
 project_settings, _, _ = load_settings()
 
 
+class Results:
+    def __init__(self):
+        self.item_pools = np.array([])
+        self.rewards_0 = np.array([])
+        self.rewards_1 = np.array([])
+
+
 def generate_item_pool():
     return random_integers(0, 5, 3)
 

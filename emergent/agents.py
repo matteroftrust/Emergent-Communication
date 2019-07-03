@@ -98,14 +98,14 @@ class TerminationPolicy(Policy):
     #     if x.shape[0] != 100:
     #         msg += 'Invalid shape of x. Expected {} received (100,)\n'.format(x.shape)
 
-    def forward(self, hidden_state):
+    def forward(self, hidden_state, test=False):
         self.input_is_valid(hidden_state)
         hidden_state = np.expand_dims(hidden_state, 0)
         confidence = self.model.predict(hidden_state)[0][0]
-        if np.isnan(confidence):
-            print('whattheeeoo termination forward returns nan!')
-        # out = np.random.random() <= confidence  # we sample with probability, TOOD should find something more elegant
-        out = np.random.choice([True, False], p=[confidence, 1 - confidence])
+        if test:
+            out = [True, False][confidence < 0.5]
+        else:
+            out = np.random.choice([True, False], p=[confidence, 1 - confidence])
         self.output_is_valid(out)
         return out
 
@@ -165,14 +165,14 @@ class ProposalPolicy(Policy):
                 Dense(6, input_shape=(hidden_state_size,)),
                 Activation('softmax')
             ])
-            # model.compile(optimizer='adam',
-            #               loss='mse',  # TODO these are random, needs to be checked
-            #               metrics=['accuracy']
-
-            sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
-            model.compile(loss='categorical_crossentropy',
-                          optimizer=sgd,
+            model.compile(optimizer='adam',
+                          loss='mse',  # TODO these are random, needs to be checked
                           metrics=['accuracy'])
+
+            # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
+            # model.compile(loss='categorical_crossentropy',
+            #               optimizer=sgd,
+            #               metrics=['accuracy'])
 
             # model.compile = optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
 
@@ -268,7 +268,7 @@ class Agent:
                 self.utilities = out
                 return out
 
-    def propose(self, context, utterance, proposal):
+    def propose(self, context, utterance, proposal, test=False):
         print_all('# Proposal by {} previous proposal {}'.format(self.id, proposal))
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
@@ -280,9 +280,9 @@ class Agent:
         print_all('hidden state after: {}'.format(hidden_state.shape))
 
         # hidden_state = np.expand_dims(hidden_state, axis=2)
-        termination = self.termination_policy(hidden_state)
-        utterance = self.utterance_policy(hidden_state)
-        proposal = self.proposal_policy(hidden_state)
+        termination = self.termination_policy(hidden_state, test=test)
+        utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
+        proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
         hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)

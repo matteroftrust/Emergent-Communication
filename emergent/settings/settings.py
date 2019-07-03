@@ -1,4 +1,5 @@
 from configparser import SafeConfigParser
+from datetime import datetime as dt
 
 
 def load_settings(config_file='config.ini'):
@@ -44,9 +45,15 @@ class ProjectSettings(Settings):
     General project settings.
     """
 
-    def __init__(self, prompt='status', validation=True):
+    def __init__(self, prompt='status', validation=True, name=None):
         self.prompt = prompt
         self.validation = [True, False][validation in ['False', False]]
+        if name:
+            self.experiment_name = name
+        else:
+            now = dt.now()
+            self.experiment_name = '{}_experiment'.format(str(now))
+        print('experiment nameee', self.experiment_name)
 
     def __str__(self):
         return 'Project ' + super().__str__()

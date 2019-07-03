@@ -8,7 +8,6 @@ import keras
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-
 if __name__ == '__main__':
 
     # we might want to use it for controlling speed of the script
@@ -81,6 +80,9 @@ if __name__ == '__main__':
         # 'linguistic_channel': True,
         # # 'episode_num': 5 * 10 ^ 5
         # item_num=3
+
+    if not os.path.exists('results'):
+        os.makedirs('results')
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())
