@@ -2,6 +2,7 @@ from numpy.random import random_integers
 import numpy as np
 import pandas as pd
 import pickle as pkl
+from scipy.stats import zscore
 from datetime import datetime as dt
 
 from .settings import load_settings
@@ -140,6 +141,13 @@ class StateBatch:
         rewards_0 = flatten(rewards_0)
         rewards_1 = flatten(rewards_1)
 
+        # standardize rewards
+        print('before', rewards_0)
+        rewards_0 = zscore(rewards_0)
+        rewards_1 = zscore(rewards_1)
+        print('after', rewards_0)
+
+
         trajectories_0 = flatten(self.trajectories_0)
         trajectories_1 = flatten(self.trajectories_1)
 
@@ -158,10 +166,6 @@ class StateBatch:
         print_all('This goes to reinfoce:')
         print_all('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
-
-        print('\nprinting everything that goes to reinforce\n')
-        for elem, name in zip([x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1], ['x_0', 'x_1', 'y_termination_0', 'y_termination_1', 'y_proposal_0', 'y_proposal_1', 'rewards_0', 'rewards_1']):
-            print(name, elem, type(elem), '\n')
 
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1
 
@@ -188,7 +192,7 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 5:
+            if i % 5:  #TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
 
@@ -203,8 +207,6 @@ class Game:
 
     def next_episode(self, test=False):
         batch = StateBatch()
-        print('agent 0 weights:')
-        print('termintation policy weights', self.agents[0].termination_policy.model.get_weights()[:5])
         # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         for i in range(self.batch_size):
             print_status('Starting batch {}'.format(i))
@@ -216,10 +218,10 @@ class Game:
 
             item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
 
-            if n == 1:
-                print_all('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
-                # TODO thats actually a problem we should solve. If agent terminates after dummy message we dont have a hidden state for the second agent
-                continue
+            # if n == 1:
+            #     print_all('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
+            #     # TODO thats actually a problem we should solve. If agent terminates after dummy message we dont have a hidden state for the second agent
+            #     continue
             batch.append(i, n, negotiations, rewards, item_pool, hidden_states)
 
         # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
@@ -245,7 +247,8 @@ class Game:
             print_all('we are in t: {} and action is {}'.format(t, action))
 
             if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
-                n = t + 1
+                print('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
+                # n = t + 1
                 break  # if terminate then negotiations are over
 
         # assign rewards
@@ -267,6 +270,7 @@ class Game:
         else:
             reward_proposer = 0
             reward_hearer = 0
+        print('what are the rewards?', reward_proposer, reward_hearer)
         return reward_proposer, reward_hearer
 
     def tests(self):
@@ -282,6 +286,7 @@ class Game:
     def reinforce(self, batch):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()
         if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
+            print('Life sucks for reinforce')
             return
         if len(x_0) == 0:
             print('No data for reinforce')

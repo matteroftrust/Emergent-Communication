@@ -67,20 +67,21 @@ class TerminationPolicy(Policy):
     def __init__(self, hidden_state_size, entropy_reg=0.05):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
-            Dense(1, input_shape=(hidden_state_size,)),
+            Dense(1, input_shape=(hidden_state_size,),
+                  kernel_initializer='random_uniform',),  # TODO or maybe random_normal
             # sigmoid()
             Activation('sigmoid')
         ])
         # takes (batch_size, hidden_state_size) vectors as input
-        # self.model.compile(optimizer='adam',
-        #                    loss='binary_crossentropy',  # TODO these are random, needs to be checked
-        #                    metrics=['accuracy'])
-        sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
-        # self.model.compile(loss='categorical_crossentropy',
-        self.model.compile(loss='mean_squared_error',
-
-                           optimizer=sgd,
+        self.model.compile(optimizer='adam',
+                           loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
+        # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
+        # # self.model.compile(loss='categorical_crossentropy',
+        # self.model.compile(loss='mean_squared_error',
+        #
+        #                    optimizer=sgd,
+        #                    metrics=['accuracy'])
 
     @validation
     def output_is_valid(self, output):
@@ -111,8 +112,6 @@ class TerminationPolicy(Policy):
 
     def train(self, x, y, sample_weight):
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
-        if np.isnan(self.model.get_weights()[0].any()):
-            print('this traininng went wronngggg!!!')
         return out
 
 
