@@ -144,14 +144,6 @@ class StateBatch:
         rewards_0 = flatten(rewards_0)
         rewards_1 = flatten(rewards_1)
 
-        # standardize rewards
-        if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
-            print('jest do dupy')
-        else:
-            rewards_0 = zscore(rewards_0)
-            rewards_1 = zscore(rewards_1)
-
-
         trajectories_0 = flatten(self.trajectories_0)
         trajectories_1 = flatten(self.trajectories_1)
 
@@ -193,10 +185,11 @@ class Game:
     def play(self):
         # columns = ['item_pool', 'reward_0', 'reward_1']
         results = []
+        baseline = 0
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 5:  #TODO remember it should be 50!
+            if i % 5:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
 
@@ -204,7 +197,7 @@ class Game:
             batch = self.next_episode()
             # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
 
-            self.reinforce(batch)
+            baseline = self.reinforce(batch, baseline)
         now = dt.now()
         with open('results/results{}.pkl'.format(str(now)), 'wb') as handle:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
@@ -287,16 +280,25 @@ class Game:
             test_batch.concatenate(batch)
         return test_batch
 
-    def reinforce(self, batch):
+    def reinforce(self, batch, baseline):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()
         if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
             print('Life sucks for reinforce')
-            return
+            return baseline
         if len(x_0) == 0:
             print('No data for reinforce')
-            return
+            return baseline
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
+
+        # subtract baseline
+        baseline = .7 * baseline + .3 * np.mean(np.concatenate([rewards_0, rewards_1]))
+        rewards_0 = rewards_0 - baseline
+        rewards_1 = rewards_1 - baseline
+        # standardize rewards
+        rewards_0 = zscore(rewards_0)
+        rewards_1 = zscore(rewards_1)
+
         # sample_weight = np.expand_dims(sample_weight, axis=1)
         # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
         # print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
@@ -323,3 +325,4 @@ class Game:
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
+        return baseline
