@@ -45,8 +45,9 @@ class ProjectSettings(Settings):
     General project settings.
     """
 
-    def __init__(self, prompt='status', validation=True, name=None):
+    def __init__(self, prompt='status', validation=True, name=None, acceleration=False):
         self.prompt = prompt
+        self.acceleration = acceleration
         self.validation = [True, False][validation in ['False', False]]
         if name:
             self.experiment_name = name

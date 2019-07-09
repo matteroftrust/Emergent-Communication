@@ -10,6 +10,9 @@ from .utils import generate_item_pool, generate_negotiation_time, print_all, pri
 
 project_settings, agent_settings, game_settings = load_settings()
 
+if project_settings.acceleration == 'CPU':
+    import multiprocessing as mp
+    output = mp.Queue()
 
 class Action:
     """
@@ -142,10 +145,11 @@ class StateBatch:
         rewards_1 = flatten(rewards_1)
 
         # standardize rewards
-        print('before', rewards_0)
-        rewards_0 = zscore(rewards_0)
-        rewards_1 = zscore(rewards_1)
-        print('after', rewards_0)
+        if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
+            print('jest do dupy')
+        else:
+            rewards_0 = zscore(rewards_0)
+            rewards_1 = zscore(rewards_1)
 
 
         trajectories_0 = flatten(self.trajectories_0)
@@ -299,6 +303,7 @@ class Game:
 
         # print('grad???')
         # print(get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
+
         out_0 = agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
         out_1 = agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
 

@@ -19,7 +19,8 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', dest='batch_size', type=int)
     parser.add_argument('--test_batch_size', dest='test_batch_size', type=int)
     parser.add_argument('--episode_num', dest='episode_num', type=int)
-    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2)
+    parser.add_argument('--acceleration', dest='acceleration')
+    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2, acceleration=False)
     args = parser.parse_args()
 
     prompt = args.__dict__['prompt']
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     batch_size = args.__dict__['batch_size']
     test_batch_size = args.__dict__['test_batch_size']
     episode_num = args.__dict__['episode_num']
+    acceleration = args.__dict__['acceleration']
 
     print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(prompt, validation, batch_size, test_batch_size, episode_num))
 
@@ -41,6 +43,7 @@ if __name__ == '__main__':
     config.add_section('project_settings')
     config.set('project_settings', 'prompt', prompt)
     config.set('project_settings', 'validation', str(validation))
+    config.set('project_settings', 'acceleration', acceleration)
 
     config.add_section('game_settings')
     config.set('game_settings', 'batch_size', str(batch_size))
@@ -56,7 +59,8 @@ if __name__ == '__main__':
 
     project_settings = emergent.settings.ProjectSettings(
         prompt=prompt,
-        validation=validation
+        validation=validation,
+        acceleration=acceleration
     )
 
     agent_settings = emergent.settings.AgentSettings(
