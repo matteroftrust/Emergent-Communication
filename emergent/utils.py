@@ -9,9 +9,12 @@ project_settings, _, _ = load_settings()
 
 class Results:
     def __init__(self):
-        self.item_pools = np.array([])
-        self.rewards_0 = np.array([])
-        self.rewards_1 = np.array([])
+        self.item_pools = []
+        self.rewards_0 = []
+        self.rewards_1 = []
+
+    def append(self, item_pools, rewards_0, rewards_1):
+        self.item_pools
 
 
 def generate_item_pool():

@@ -188,7 +188,7 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 50:
+            if i % 5:
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
 
@@ -259,9 +259,9 @@ class Game:
 
     def compute_rewards(self, item_pool, action, proposer, hearer):
         """
-        Method for generating rewards. Might be more clear to convert it to a class.
+        Method for generating rewards.
         """
-        if action.is_valid(item_pool) or not action.terminate:  # if proposal is valid and terminated
+        if action.is_valid(item_pool) and action.terminate:  # if proposal is valid and terminated
             reward_proposer = np.dot(proposer.utilities, action.proposal)
             reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
         else:
