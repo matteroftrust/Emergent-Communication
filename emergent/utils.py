@@ -32,14 +32,14 @@ def generate_negotiation_time():
             return int(out)
 
 
-def print_all(message):
+def print_all(*args, **kwargs):
     if project_settings.prompt == 'all':
-        print(message)
+        print(*args, **kwargs)
 
 
-def print_status(message):
+def print_status(*args, **kwargs):
     if project_settings.prompt in ['status', 'all']:
-        print(message)
+        print(*args, **kwargs)
 
 
 def validation(func):

@@ -231,7 +231,7 @@ class Game:
             print_all('we are in t: {} and action is {}'.format(t, action))
 
             if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
-                print('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
+                print_status('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
                 # n = t + 1
                 break  # if terminate then negotiations are over
 
@@ -248,7 +248,7 @@ class Game:
         else:
             reward_proposer = 0
             reward_hearer = 0
-        print('what are the rewards?', reward_proposer, reward_hearer)
+        print_status('what are the rewards?', reward_proposer, reward_hearer)
         return reward_proposer, reward_hearer
 
     def tests(self):
