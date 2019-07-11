@@ -111,11 +111,31 @@ class StateBatch:
     def save_log(self):
         pass
 
-    def convert_for_training(self):
+    def convert_for_training(self, baseline, prosocial):
         # TODO: this whole code needs a person equipped with a brain
 
         rewards_0 = []
         rewards_1 = []
+
+
+# # subtract baseline
+# if self.prosocial:
+#     # TODO should be just one reward
+#     baseline = .7 * baseline + .3 * np.mean(np.concatenate(rewards))
+#     rewards[0] = rewards[0] - baseline
+#     rewards[1] = rewards[1] - baseline
+#     # standardize rewards
+#     rewards[0] = zscore(rewards[0])
+#     rewards[1] = zscore(rewards[1])
+# else:
+#     print(baseline)
+#
+#     baseline = .7 * baseline + .3 * np.mean(rewards, 1)
+#     print('baseline yoy', baseline)
+#     rewards[0] = rewards[0] - baseline[0]  # TODO can be done nicer
+#     rewards[1] = rewards[1] - baseline[1]
+
+
 
         for i in range(len(self.ns)):
             t_0_len = len(self.trajectories_0[i])
@@ -154,12 +174,13 @@ class StateBatch:
         print_all('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
-        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1
+        rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
+        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards
 
 
 class Game:
 
-    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3):
+    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3, prosocial=False):
         self.rounds = []
         self.i = 0
         self.agents = agents  # list of agents
@@ -170,10 +191,15 @@ class Game:
         self.batch_size = batch_size
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
+        self.prosocial = prosocial
 
     def play(self):
         results = []
-        baseline = 0
+
+        if self.prosocial:  # if prosocial we do need only a prosocial reward R = R_A + R_B
+            baseline = np.zeros(1)
+        else:
+            baseline = np.zeros(2)
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
@@ -230,8 +256,8 @@ class Game:
                 # n = t + 1
                 break  # if terminate then negotiations are over
 
-        reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
-        return item_pool, negotiations, [reward_proposer, reward_hearer], n, hidden_states
+        rewards = self.compute_rewards(item_pool, action, proposer, hearer)
+        return item_pool, negotiations, rewards, n, hidden_states
 
     def compute_rewards(self, item_pool, action, proposer, hearer):
         """
@@ -244,7 +270,7 @@ class Game:
             reward_proposer = 0
             reward_hearer = 0
         print_status('what are the rewards?', reward_proposer, reward_hearer)
-        return reward_proposer, reward_hearer
+        return [reward_proposer, reward_hearer]
 
     def tests(self):
         """
@@ -257,34 +283,34 @@ class Game:
         return test_batch
 
     def reinforce(self, batch, baseline):
-        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards_0, rewards_1 = batch.convert_for_training()
-        if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
-            print('Life sucks for reinforce')
-            return baseline
-        if len(x_0) == 0:
-            print('No data for reinforce')
-            return baseline
+        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards = batch.convert_for_training(baseline, self.prosocial)
+        # if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
+        #     print('Life sucks for reinforce')
+        #     return baseline
+        # if len(x_0) == 0:
+        #     print('No data for reinforce')
+        #     return baseline
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
 
-        # subtract baseline
-        baseline = .7 * baseline + .3 * np.mean(np.concatenate([rewards_0, rewards_1]))
-        rewards_0 = rewards_0 - baseline
-        rewards_1 = rewards_1 - baseline
         # standardize rewards
-        rewards_0 = zscore(rewards_0)
-        rewards_1 = zscore(rewards_1)
+        if self.prosocial:
+            # TODO
+            pass
+        else:
+            rewards[0] = zscore(rewards[0])
+            rewards[1] = zscore(rewards[1])
 
         # print('gradient', get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
 
-        agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
-        agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
+        agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
+        agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
-        agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
-        agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
+        agent_0.proposal_policy.train(x_0, y_proposal_0, rewards[0])
+        agent_1.proposal_policy.train(x_1, y_proposal_1, rewards[1])
 
-        agent_0.utterance_policy.train(x_0, y_proposal_0, rewards_0)
-        agent_1.utterance_policy.train(x_1, y_proposal_1, rewards_1)
+        agent_0.utterance_policy.train(x_0, y_proposal_0, rewards[0])
+        agent_1.utterance_policy.train(x_1, y_proposal_1, rewards[1])
 
         print('Reinforce done!!!!!')
 

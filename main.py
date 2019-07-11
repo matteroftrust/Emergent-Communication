@@ -2,8 +2,6 @@ from configparser import SafeConfigParser
 import argparse
 import os
 
-from emergent.settings import load_settings
-
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -13,6 +11,7 @@ if __name__ == '__main__':
     # https://docs.python.org/3.6/library/profile.html
 
     if os.path.isfile('config.ini'):
+        print('removinnn')
         os.remove('config.ini')
 
     for dir in ['results', 'figs']:
@@ -27,7 +26,9 @@ if __name__ == '__main__':
     parser.add_argument('--episode_num', dest='episode_num', type=int)
     parser.add_argument('--acceleration', dest='acceleration')
     parser.add_argument('--channels', dest='channels')
-    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2, acceleration=False, channels='proposal')
+    parser.add_argument('--prosocial', dest='prosocial')
+    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2,
+                        acceleration=False, channels='proposal', prosocial=False)
     args = parser.parse_args()
 
     prompt = args.__dict__['prompt']
@@ -37,6 +38,7 @@ if __name__ == '__main__':
     episode_num = args.__dict__['episode_num']
     acceleration = args.__dict__['acceleration']
     channels = args.__dict__['channels'].split(',')
+    prosocial = args.__dict__['prosocial']
 
     print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(
           prompt, validation, batch_size, test_batch_size, episode_num))
@@ -52,6 +54,7 @@ if __name__ == '__main__':
     config.set('game_settings', 'batch_size', str(batch_size))
     config.set('game_settings', 'test_batch_size', str(test_batch_size))
     config.set('game_settings', 'episode_num', str(episode_num))
+    config.set('game_settings', 'prosocial', str(prosocial))
 
     config.add_section('agent_settings')
     config.set('agent_settings', 'linguistic_channel', str('linguistic' in channels))
@@ -69,8 +72,8 @@ if __name__ == '__main__':
     #     validation=validation,
     #     acceleration=acceleration
     # )
-    #
-    project_settings, agent_settings, game_settings = load_settings()
+
+    project_settings, agent_settings, game_settings = emergent.settings.load_settings()
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())

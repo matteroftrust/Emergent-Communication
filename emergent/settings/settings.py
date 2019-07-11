@@ -5,7 +5,7 @@ from datetime import datetime as dt
 def load_settings(config_file='config.ini'):
     config = SafeConfigParser()
     config.read('config.ini')
-
+    print('what is config?', config)
     project_settings = ProjectSettings(**dict(config.items('project_settings')))
     agent_settings = AgentSettings(**dict(config.items('agent_settings')))
     game_settings = GameSettings(**dict(config.items('game_settings')))
@@ -61,7 +61,8 @@ class AgentSettings(Settings):
                  discount_factor=0.99,
                  learning_rate=0.001,
                  proposal_channel=True,
-                 linguistic_channel=False):
+                 linguistic_channel=False,
+                 ):
         self.lambda_termination = lambda_termination
         self.lambda_proposal = lambda_proposal
         self.lambda_utterance = lambda_utterance
@@ -83,11 +84,12 @@ class GameSettings(Settings):
     Game specific settings.
     """
 
-    def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3):
+    def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3, prosocial=False):
         self.batch_size = int(batch_size)
         self.test_batch_size = test_batch_size
         self.episode_num = int(episode_num)
         self.item_num = item_num
+        self.prosocial = [True, False][prosocial in ['False', False]]
 
     def __str__(self):
         return 'Game ' + super().__str__()
