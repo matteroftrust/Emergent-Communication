@@ -1,24 +1,18 @@
 from numpy.random import random_integers
 import itertools
 import numpy as np
-import time
 
 from .game import Action
 from .settings import load_settings
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras.activations import sigmoid
 from keras.layers import Dense, Activation
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
-from keras.optimizers import SGD
-
-from keras.callbacks import TensorBoard
-
+# from keras.optimizers import SGD
 
 project_settings, agent_settings, game_settings = load_settings()
-# tensorboard = TensorBoard(log_dir='logs/{}'.format(time()))
 
 
 class NumberSequenceEncoder:
@@ -69,10 +63,8 @@ class TerminationPolicy(Policy):
         self.model = Sequential([
             Dense(1, input_shape=(hidden_state_size,),
                   kernel_initializer='random_uniform',),  # TODO or maybe random_normal
-            # sigmoid()
             Activation('sigmoid')
         ])
-        # takes (batch_size, hidden_state_size) vectors as input
         self.model.compile(optimizer='adam',
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
@@ -88,16 +80,6 @@ class TerminationPolicy(Policy):
         is_valid = type(output) in [bool, np.bool, np.bool_]
         msg = '{} output invalid. Expected: {} received: {}'.format(self.__class__.__name__, 'boolean', type(output))
         return is_valid, msg
-
-    # @validation
-    # def train_batch_is_valid(self, x, y, sample_weight):
-    #     msg = ''
-    #     if x.shape[0] != 100:
-    #         msg += 'Invalid shape of x. Expected {} received (100,)\n'.format(x.shape)
-    #     if y.shape[0] != 1:
-    #         msg += 'Invalid shape of x. Expected {} received (1,)\n'.format(x.shape)
-    #     if x.shape[0] != 100:
-    #         msg += 'Invalid shape of x. Expected {} received (100,)\n'.format(x.shape)
 
     def forward(self, hidden_state, test=False):
         self.input_is_valid(hidden_state)
@@ -190,26 +172,8 @@ class ProposalPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
-        # print('train proposal policy shape x {} y {} sam {}'.format(x.shape, y.shape, sample_weight.shape))
-
-        # x = np.expand_dims(x, 2)
         for i in range(self.item_num):
             self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
-
-# class HiddenStateNetwork(Policy):
-#     """
-#     Formally, its not a policy be why wouldnt we inherit from Policy class if we can.
-#     """
-#     def __init__(self, vocab_size, utterance_len, hidden_state_size=100):
-#         self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?
-#         # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
-#         self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
-#
-#         self.core_layer_model = Sequential([
-#             Dense(hidden_state_size, input_shape=(1500,), name="{}_dense".format(self.id)),
-#             Activation('relu'),
-#         ])
-#         self.core_layer = self.core_layer_model.predict
 
 
 class Agent:
@@ -268,17 +232,12 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal, test=False):
-        print_all('# Proposal by {} previous proposal {}'.format(self.id, proposal))
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
-        print_all('hidden state original: {}'.format(input.shape))
         input = np.reshape(input, (1, 1500))
-        print_all('hidden state : {}'.format(input.shape))
         hidden_state = self.core_layer(input)
         hidden_state = np.reshape(hidden_state, (100,))
-        print_all('hidden state after: {}'.format(hidden_state.shape))
 
-        # hidden_state = np.expand_dims(hidden_state, axis=2)
         termination = self.termination_policy(hidden_state, test=test)
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
         proposal = self.proposal_policy(hidden_state)  # should test also be passed here?

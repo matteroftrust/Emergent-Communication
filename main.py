@@ -1,10 +1,7 @@
 from configparser import SafeConfigParser
 import argparse
 import os
-import keras
 
-# keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=32, write_graph=True, write_grads=False, write_images=False, embeddings_freq=0,
-#                             embeddings_layer_names=None, embeddings_metadata=None, embeddings_data=None, update_freq='epoch')
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -12,6 +9,13 @@ if __name__ == '__main__':
 
     # we might want to use it for controlling speed of the script
     # https://docs.python.org/3.6/library/profile.html
+
+    if os.path.isfile('config.ini'):
+        os.remove('config.ini')
+
+    for dir in ['results', 'figs']:
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', dest='prompt', help='wanna see comments?')
@@ -30,13 +34,8 @@ if __name__ == '__main__':
     episode_num = args.__dict__['episode_num']
     acceleration = args.__dict__['acceleration']
 
-    print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(prompt, validation, batch_size, test_batch_size, episode_num))
-
-
-    try:
-        os.remove('config.ini')
-    except:
-        pass
+    print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(
+          prompt, validation, batch_size, test_batch_size, episode_num))
 
     config = SafeConfigParser()
     config.read('config.ini')
@@ -84,9 +83,6 @@ if __name__ == '__main__':
         # 'linguistic_channel': True,
         # # 'episode_num': 5 * 10 ^ 5
         # item_num=3
-
-    if not os.path.exists('results'):
-        os.makedirs('results')
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())

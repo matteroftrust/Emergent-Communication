@@ -1,6 +1,5 @@
 from numpy.random import random_integers
 import numpy as np
-import pandas as pd
 import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
@@ -10,9 +9,6 @@ from .utils import generate_item_pool, generate_negotiation_time, print_all, pri
 
 project_settings, agent_settings, game_settings = load_settings()
 
-if project_settings.acceleration == 'CPU':
-    import multiprocessing as mp
-    output = mp.Queue()
 
 class Action:
     """
@@ -120,7 +116,6 @@ class StateBatch:
         pass
 
     def convert_for_training(self):
-        # TODO: rewards need reguralization
         # TODO: this whole code needs a person equipped with a brain
 
         rewards_0 = []
@@ -180,10 +175,8 @@ class Game:
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
 
-        # print('batchsize in statebatch which is from game init: {}'.format(batch_size))
 
     def play(self):
-        # columns = ['item_pool', 'reward_0', 'reward_1']
         results = []
         baseline = 0
 
@@ -215,13 +208,7 @@ class Game:
 
             item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
 
-            # if n == 1:
-            #     print_all('this is when an agent terminates after dummy message, so negotiations[0].terminate should be True. Is it true? {}'.format(negotiations[0].terminate))
-            #     # TODO thats actually a problem we should solve. If agent terminates after dummy message we dont have a hidden state for the second agent
-            #     continue
             batch.append(i, n, negotiations, rewards, item_pool, hidden_states)
-
-        # TODO remember about random order while adding stuff to batch_negotiations nad batch_rewards
 
         return batch
 
@@ -247,12 +234,6 @@ class Game:
                 print('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
                 # n = t + 1
                 break  # if terminate then negotiations are over
-
-        # assign rewards
-
-        # print('AFTER NEGOTIATIONS:\nhidden state len {} shape of hs: {} n: {}'.format(len(hidden_states), np.array(hidden_states).shape, n))
-        # print('negotiations: neg len: {} neg shape: {}'.format(len(negotiations), np.array(negotiations).shape))
-        # print('how does it look like then?', negotiations)
 
         reward_proposer, reward_hearer = self.compute_rewards(item_pool, action, proposer, hearer)
         return item_pool, negotiations, [reward_proposer, reward_hearer], n, hidden_states
@@ -299,29 +280,19 @@ class Game:
         rewards_0 = zscore(rewards_0)
         rewards_1 = zscore(rewards_1)
 
-        # sample_weight = np.expand_dims(sample_weight, axis=1)
-        # TODO what does it mean: sample_weight_mode="temporal" in compile(). If you just mean to use sample-wise weights, make sure your sample_weight array is 1D.
-        # print_all('Reinforce input shape: x: {} y: {} sample_weight: {}'.format(x.shape, y.shape, sample_weight.shape))
+        # print('gradient', get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
 
-        # print('grad???')
-        # print(get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
+        agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
+        agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
 
-        out_0 = agent_0.termination_policy.train(x_0, y_termination_0, rewards_0)
-        out_1 = agent_1.termination_policy.train(x_1, y_termination_1, rewards_1)
+        agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
+        agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
 
-        # print('train termination for 0 {}'.format(out_0))
-        # print('train termination for 1 {}'.format(out_1))
-
-        out_0 = agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
-        out_1 = agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
+        if agent_settings.utterance_channel:
+            agent_0.utterance_policy.train(x_0, y_proposal_0, rewards_0)
+            agent_1.utterance_policy.train(x_1, y_proposal_1, rewards_1)
 
         print('Reinforce done!!!!!')
-
-        # TerminationPolicy takes boolean as y
-        # ProposalPolicy takes action.proposal as y
-        # UtterancePolicy takes action.utterance as y if utterance channel is on
-
-        # print('weigths', np.sum(agent.termination_policy.model.get_weights()))
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
