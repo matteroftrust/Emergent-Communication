@@ -2,6 +2,8 @@ from configparser import SafeConfigParser
 import argparse
 import os
 
+from emergent.settings import load_settings
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -24,7 +26,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_batch_size', dest='test_batch_size', type=int)
     parser.add_argument('--episode_num', dest='episode_num', type=int)
     parser.add_argument('--acceleration', dest='acceleration')
-    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2, acceleration=False)
+    parser.add_argument('--channels', dest='channels')
+    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2, acceleration=False, channels='proposal')
     args = parser.parse_args()
 
     prompt = args.__dict__['prompt']
@@ -33,6 +36,7 @@ if __name__ == '__main__':
     test_batch_size = args.__dict__['test_batch_size']
     episode_num = args.__dict__['episode_num']
     acceleration = args.__dict__['acceleration']
+    channels = args.__dict__['channels'].split(',')
 
     print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(
           prompt, validation, batch_size, test_batch_size, episode_num))
@@ -49,6 +53,10 @@ if __name__ == '__main__':
     config.set('game_settings', 'test_batch_size', str(test_batch_size))
     config.set('game_settings', 'episode_num', str(episode_num))
 
+    config.add_section('agent_settings')
+    config.set('agent_settings', 'linguistic_channel', str('linguistic' in channels))
+    config.set('agent_settings', 'proposal_channel', str('proposal' in channels))
+
     with open('config.ini', 'a') as f:
         config.write(f)
 
@@ -56,33 +64,13 @@ if __name__ == '__main__':
     import emergent
     from emergent.utils import print_status, print_all
 
-    project_settings = emergent.settings.ProjectSettings(
-        prompt=prompt,
-        validation=validation,
-        acceleration=acceleration
-    )
-
-    agent_settings = emergent.settings.AgentSettings(
-        lambda_termination=0.05,  # entropy reguralization weight hyperparameter for termination policy
-        lambda_proposal=0.05,  # entropy reguralization weight hyperparameter for proposal policy
-        lambda_utterance=0.001,  # entropy reguralization weight hyperparameter for linguistic utterance policy
-        hidden_state_size=100,
-        vocab_size=11,
-        utterance_len=6,
-        dim_size=100,
-        discount_factor=0.99,
-        learning_rate=0.001,
-        utterance_channel=False
-    )
-
-    game_settings = emergent.settings.GameSettings(
-        batch_size=batch_size,
-        test_batch_size=test_batch_size,
-        episode_num=episode_num,
-    )
-        # 'linguistic_channel': True,
-        # # 'episode_num': 5 * 10 ^ 5
-        # item_num=3
+    # project_settings = emergent.settings.ProjectSettings(
+    #     prompt=prompt,
+    #     validation=validation,
+    #     acceleration=acceleration
+    # )
+    #
+    project_settings, agent_settings, game_settings = load_settings()
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())

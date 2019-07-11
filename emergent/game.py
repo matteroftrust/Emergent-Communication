@@ -4,10 +4,7 @@ import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .settings import load_settings
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
-
-project_settings, agent_settings, game_settings = load_settings()
 
 
 class Action:
@@ -51,9 +48,8 @@ class StateBatch:
     would be smart to be able to apply discounted_rewards function to whole matrix without checking lenghths
     """
 
-    def __init__(self, batch_size=game_settings.batch_size,
-                 max_trajectory_len=10, item_num=game_settings.item_num,
-                 hidden_state_size=agent_settings.hidden_state_size, ids=[0, 1]):
+    def __init__(self, max_trajectory_len=10, item_num=3,
+                 hidden_state_size=100, ids=[0, 1]):
         # trajectory_len = np.ceil(max_trajectory_len/2).astype(int)
         self.trajectories_0 = []
         self.trajectories_1 = []
@@ -175,7 +171,6 @@ class Game:
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
 
-
     def play(self):
         results = []
         baseline = 0
@@ -213,7 +208,7 @@ class Game:
         return batch
 
     def negotiations(self, item_pool, n, test=False):
-        action = Action(False, np.zeros(self.agents[0].utterance_len), np.zeros(self.item_num))  # dummy action TODO how should it be instantiated
+        action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         rand_0_or_1 = random_integers(0, 1)
         proposer = self.agents[rand_0_or_1]
@@ -288,9 +283,8 @@ class Game:
         agent_0.proposal_policy.train(x_0, y_proposal_0, rewards_0)
         agent_1.proposal_policy.train(x_1, y_proposal_1, rewards_1)
 
-        if agent_settings.utterance_channel:
-            agent_0.utterance_policy.train(x_0, y_proposal_0, rewards_0)
-            agent_1.utterance_policy.train(x_1, y_proposal_1, rewards_1)
+        agent_0.utterance_policy.train(x_0, y_proposal_0, rewards_0)
+        agent_1.utterance_policy.train(x_1, y_proposal_1, rewards_1)
 
         print('Reinforce done!!!!!')
 

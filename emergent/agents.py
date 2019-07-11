@@ -3,7 +3,6 @@ import itertools
 import numpy as np
 
 from .game import Action
-from .settings import load_settings
 from .utils import print_all, print_status, validation, convert_to_sparse
 
 from keras.layers import Dense, Activation
@@ -11,8 +10,6 @@ from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.models import Sequential
 # from keras.optimizers import SGD
-
-project_settings, agent_settings, game_settings = load_settings()
 
 
 class NumberSequenceEncoder:
@@ -104,23 +101,22 @@ class UtterancePolicy(Policy):
     subsequently, the model prediction from the previous timestep is fed in as input at the next timestep,
     in order to predict the next symbol
     """
-    def __init__(self, hidden_state_size, utterance_policy=False, entropy_reg=0.001):
-        if not utterance_policy:
-            # should return some dummy policy
-            pass
-        self.model = Sequential([
-            LSTM(hidden_state_size, input_shape=(hidden_state_size, 1))
-        ])
-        self.model.compile(optimizer='adam',
-                           loss='mse',  # TODO these are random, needs to be checked
-                           metrics=['accuracy'])
+    def __init__(self, hidden_state_size, is_on=False, entropy_reg=0.001):
+        self.is_on = is_on
+        if self.is_on:
+            self.model = Sequential([
+                LSTM(hidden_state_size, input_shape=(hidden_state_size, 1))
+            ])
+            self.model.compile(optimizer='adam',
+                               loss='mse',  # TODO these are random, needs to be checked
+                               metrics=['accuracy'])
 
     @property
     def dummy(self):
         return np.zeros(6)
 
-    def forward(self, hidden_state, utterance_channel=False):
-        if not utterance_channel:
+    def forward(self, hidden_state):
+        if not self.is_on:
             utterance = self.dummy
         else:
             hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
@@ -129,8 +125,9 @@ class UtterancePolicy(Policy):
         self.output_is_valid(utterance, (6,))
         return utterance
 
-    def train(self):
-        pass
+    def train(self, x, y, sample_weight):
+        if self.is_on:
+            pass # TODO !!!!!!!
 
 
 class ProposalPolicy(Policy):
@@ -138,29 +135,37 @@ class ProposalPolicy(Policy):
     This is parametrised by 3 separate feedforward neural networks, one for each item type,
     which each take as input ht and output a distribution over {0...5} indicating the proposal for that item
     """
-    def __init__(self, hidden_state_size, item_num=3, entropy_reg=0.05):
+    def __init__(self, is_on, hidden_state_size=100, item_num=3, entropy_reg=0.05):
+        self.is_on = is_on
         self.item_num = item_num
-        self.models = []
-        for _ in range(self.item_num):
-            model = Sequential([
-                Dense(6, input_shape=(hidden_state_size,)),
-                Activation('softmax')
-            ])
-            model.compile(optimizer='adam',
-                          loss='mse',  # TODO these are random, needs to be checked
-                          metrics=['accuracy'])
+        if self.is_on:
+            self.models = []
+            for _ in range(self.item_num):
+                model = Sequential([
+                    Dense(6, input_shape=(hidden_state_size,)),
+                    Activation('softmax')
+                ])
+                model.compile(optimizer='adam',
+                              loss='mse',  # TODO these are random, needs to be checked
+                              metrics=['accuracy'])
 
-            # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
-            # model.compile(loss='categorical_crossentropy',
-            #               optimizer=sgd,
-            #               metrics=['accuracy'])
+                # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
+                # model.compile(loss='categorical_crossentropy',
+                #               optimizer=sgd,
+                #               metrics=['accuracy'])
 
-            # model.compile = optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
+                # model.compile = optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
 
-            self.models.append(model)
+                self.models.append(model)
+
+    @property
+    def dummy(self):
+        return np.zeros(self.item_num)
 
     def forward(self, hidden_state):
         self.input_is_valid(hidden_state)
+        if not self.is_on:
+            return self.dummy
         hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
         for i in range(self.item_num):
@@ -172,8 +177,9 @@ class ProposalPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
-        for i in range(self.item_num):
-            self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
+        if self.is_on:
+            for i in range(self.item_num):
+                self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
 
 
 class Agent:
@@ -183,7 +189,7 @@ class Agent:
     def __init__(self, lambda_termination, lambda_proposal,
                  lambda_utterance, hidden_state_size, vocab_size,
                  dim_size, utterance_len, discount_factor, learning_rate,
-                 utterance_channel):
+                 proposal_channel, linguistic_channel):
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
@@ -193,18 +199,15 @@ class Agent:
         self.lambda_utterance = lambda_utterance
 
         # policies
-        self.utterance_channel = utterance_channel
-        self.utterance_len = utterance_len
-        self.vocab_size = vocab_size
-
         self.termination_policy = TerminationPolicy(hidden_state_size)
-        self.utterance_policy = UtterancePolicy(hidden_state_size, utterance_channel)
-        self.proposal_policy = ProposalPolicy(hidden_state_size)
+        self.utterance_policy = UtterancePolicy(hidden_state_size, is_on=linguistic_channel)
+        print('whats proposal channel', proposal_channel)
+        self.proposal_policy = ProposalPolicy(is_on=proposal_channel, hidden_state_size=hidden_state_size)
 
         # NumberSequenceEncoders
-        self.context_encoder = NumberSequenceEncoder(input_dim=self.vocab_size, output_dim=hidden_state_size)  # is this correct?
+        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)  # is this correct?
         # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=self.utterance_len, output_dim=hidden_state_size)
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=utterance_len, output_dim=hidden_state_size)
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
         self.core_layer_model = Sequential([

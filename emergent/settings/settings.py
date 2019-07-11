@@ -6,23 +6,10 @@ def load_settings(config_file='config.ini'):
     config = SafeConfigParser()
     config.read('config.ini')
 
-    try:
-        project_settings = ProjectSettings(**dict(config.items('project_settings')))
-    except:
-        project_settings = ProjectSettings()
+    project_settings = ProjectSettings(**dict(config.items('project_settings')))
+    agent_settings = AgentSettings(**dict(config.items('agent_settings')))
+    game_settings = GameSettings(**dict(config.items('game_settings')))
 
-
-    try:
-        agent_settings = AgentSettings(**dict(config.items('agent_settings')))
-    except:
-        agent_settings = AgentSettings()
-
-    try:
-        args = dict(config.items('game_settings'))
-        args = dict([key, int(val)] for key, val in args.items())
-        game_settings = GameSettings(**args)
-    except:
-        game_settings = GameSettings()
 
     return project_settings, agent_settings, game_settings
 
@@ -73,7 +60,8 @@ class AgentSettings(Settings):
                  dim_size=100,
                  discount_factor=0.99,
                  learning_rate=0.001,
-                 utterance_channel=False):
+                 proposal_channel=True,
+                 linguistic_channel=False):
         self.lambda_termination = lambda_termination
         self.lambda_proposal = lambda_proposal
         self.lambda_utterance = lambda_utterance
@@ -83,7 +71,8 @@ class AgentSettings(Settings):
         self.dim_size = dim_size
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
-        self.utterance_channel = utterance_channel
+        self.proposal_channel = [True, False][proposal_channel in ['False', False]]
+        self.linguistic_channel = [True, False][linguistic_channel in ['False', False]]
 
     def __str__(self):
         return 'Agent ' + super().__str__()
@@ -95,9 +84,9 @@ class GameSettings(Settings):
     """
 
     def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3):
-        self.batch_size = batch_size
+        self.batch_size = int(batch_size)
         self.test_batch_size = test_batch_size
-        self.episode_num = episode_num
+        self.episode_num = int(episode_num)
         self.item_num = item_num
 
     def __str__(self):
