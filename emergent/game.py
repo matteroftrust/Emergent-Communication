@@ -116,7 +116,8 @@ class StateBatch:
 
         rewards_0 = []
         rewards_1 = []
-
+        print('reward0', len(self.reward_0))
+        print('reward1', len(self.reward_1))
 
 # # subtract baseline
 # if self.prosocial:
