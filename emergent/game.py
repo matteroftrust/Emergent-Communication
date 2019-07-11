@@ -113,36 +113,40 @@ class StateBatch:
 
     def convert_for_training(self, baseline, prosocial):
         # TODO: this whole code needs a person equipped with a brain
-
         rewards_0 = []
         rewards_1 = []
-        print('reward0', len(self.reward_0))
-        print('reward1', len(self.reward_1))
 
-# # subtract baseline
-# if self.prosocial:
-#     # TODO should be just one reward
-#     baseline = .7 * baseline + .3 * np.mean(np.concatenate(rewards))
-#     rewards[0] = rewards[0] - baseline
-#     rewards[1] = rewards[1] - baseline
-#     # standardize rewards
-#     rewards[0] = zscore(rewards[0])
-#     rewards[1] = zscore(rewards[1])
-# else:
-#     print(baseline)
-#
-#     baseline = .7 * baseline + .3 * np.mean(rewards, 1)
-#     print('baseline yoy', baseline)
-#     rewards[0] = rewards[0] - baseline[0]  # TODO can be done nicer
-#     rewards[1] = rewards[1] - baseline[1]
+        self.rewards = [self.rewards_0, self.rewards_1]
 
+        # subtract baseline
+        baseline = .7 * baseline + .3 * np.mean(self.rewards, 1)
 
+        if prosocial:
+            self.rewards[0] = self.rewards[0] - baseline[0]
+            if not all(reward == 0 for reward in self.rewards[0]):
+                self.rewards[0] = zscore(self.rewards[0])
+
+        else:
+            self.rewards[0] = self.rewards[0] - baseline[0]
+            self.rewards[1] = self.rewards[1] - baseline[0]
+
+            # standardize rewards
+            if not all(reward == 0 for reward in self.rewards[0]):
+                self.rewards[0] = zscore(self.rewards[0])
+            if not all(reward == 0 for reward in self.rewards[1]):
+                self.rewards[1] = zscore(self.rewards[1])
 
         for i in range(len(self.ns)):
+
+            if prosocial:
+                reward_0 = self.rewards[0][i]
+                reward_1 = self.rewards[0][i]
+            else:
+                reward_0 = self.rewards[0][i]
+                reward_1 = self.rewards[1][i]
+
             t_0_len = len(self.trajectories_0[i])
             t_1_len = len(self.trajectories_1[i])
-            reward_0 = self.rewards_0[i]
-            reward_1 = self.rewards_1[i]
 
             input_0 = np.ones(t_0_len) * reward_0
             input_1 = np.ones(t_1_len) * reward_1
@@ -285,12 +289,12 @@ class Game:
 
     def reinforce(self, batch, baseline):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards = batch.convert_for_training(baseline, self.prosocial)
-        # if sum(rewards_0) == 0 or sum(rewards_1) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
-        #     print('Life sucks for reinforce')
-        #     return baseline
-        # if len(x_0) == 0:
-        #     print('No data for reinforce')
-        #     return baseline
+        if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
+            return baseline
+        if len(x_0) == 0:
+            print('No data for reinforce')
+            return baseline
+
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
 
@@ -303,7 +307,6 @@ class Game:
             rewards[1] = zscore(rewards[1])
 
         # print('gradient', get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
-
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 

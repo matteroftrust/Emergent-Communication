@@ -127,7 +127,7 @@ class UtterancePolicy(Policy):
 
     def train(self, x, y, sample_weight):
         if self.is_on:
-            pass # TODO !!!!!!!
+            pass  # TODO !!!!!!!
 
 
 class ProposalPolicy(Policy):
@@ -149,13 +149,6 @@ class ProposalPolicy(Policy):
                               loss='mse',  # TODO these are random, needs to be checked
                               metrics=['accuracy'])
 
-                # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
-                # model.compile(loss='categorical_crossentropy',
-                #               optimizer=sgd,
-                #               metrics=['accuracy'])
-
-                # model.compile = optimizers.SGD(lr=0.01, momentum=0.0, decay=0.0, nesterov=False)
-
                 self.models.append(model)
 
     @property
@@ -169,8 +162,8 @@ class ProposalPolicy(Policy):
         hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
         for i in range(self.item_num):
-            distribution = self.models[i].predict(hidden_state)
-            single_proposal = np.random.choice(np.arange(6), p=distribution[0])
+            distribution = self.models[i].predict(hidden_state)[0]
+            single_proposal = np.random.choice(np.arange(6), p=distribution)
             proposal.append(single_proposal)
         out = np.array(proposal)
         self.output_is_valid(out, (3,))
@@ -180,6 +173,10 @@ class ProposalPolicy(Policy):
         if self.is_on:
             for i in range(self.item_num):
                 self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
+
+    def get_weights(self):
+        out = [model.get_weights() for model in self.models]
+        return out
 
 
 class Agent:
@@ -201,7 +198,6 @@ class Agent:
         # policies
         self.termination_policy = TerminationPolicy(hidden_state_size)
         self.utterance_policy = UtterancePolicy(hidden_state_size, is_on=linguistic_channel)
-        print('whats proposal channel', proposal_channel)
         self.proposal_policy = ProposalPolicy(is_on=proposal_channel, hidden_state_size=hidden_state_size)
 
         # NumberSequenceEncoders
