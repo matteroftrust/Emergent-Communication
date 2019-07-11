@@ -43,7 +43,7 @@ if __name__ == '__main__':
     config.add_section('project_settings')
     config.set('project_settings', 'prompt', prompt)
     config.set('project_settings', 'validation', str(validation))
-    config.set('project_settings', 'acceleration', acceleration)
+    config.set('project_settings', 'acceleration', str(acceleration))
 
     config.add_section('game_settings')
     config.set('game_settings', 'batch_size', str(batch_size))
