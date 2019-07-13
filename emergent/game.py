@@ -169,6 +169,9 @@ class StateBatch:
         y_termination_0 = np.array([elem.terminate for elem in trajectories_0])
         y_termination_1 = np.array([elem.terminate for elem in trajectories_1])
 
+        y_utterance_0 = np.array([elem.utterance for elem in trajectories_0])
+        y_utterance_1 = np.array([elem.utterance for elem in trajectories_1])
+
         x_0 = flatten(self.hidden_states_0)
         x_1 = flatten(self.hidden_states_1)
 
@@ -180,7 +183,7 @@ class StateBatch:
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
-        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards
+        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
 
 
 class Game:
@@ -224,6 +227,7 @@ class Game:
     def next_episode(self, test=False):
         batch = StateBatch()
         # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
+        # TODO whould be faster to generate data here
         for i in range(self.batch_size):
             print_status('Starting batch {}'.format(i))
             # beginning of new round. item pool and utility funcions generation
@@ -288,7 +292,7 @@ class Game:
         return test_batch
 
     def reinforce(self, batch, baseline):
-        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards = batch.convert_for_training(baseline, self.prosocial)
+        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
         if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
             return baseline
         if len(x_0) == 0:
@@ -313,8 +317,8 @@ class Game:
         agent_0.proposal_policy.train(x_0, y_proposal_0, rewards[0])
         agent_1.proposal_policy.train(x_1, y_proposal_1, rewards[1])
 
-        agent_0.utterance_policy.train(x_0, y_proposal_0, rewards[0])
-        agent_1.utterance_policy.train(x_1, y_proposal_1, rewards[1])
+        agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
+        agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
 
         print('Reinforce done!!!!!')
 

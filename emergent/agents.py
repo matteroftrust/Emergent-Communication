@@ -5,10 +5,11 @@ import numpy as np
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras.layers import Dense, Activation
+from keras import Input
+from keras.layers import Dense, Activation, LSTM
 from keras.layers.embeddings import Embedding
-from keras.layers.recurrent import LSTM
-from keras.models import Sequential
+# from keras.layers.recurrent import LSTM
+from keras.models import Sequential, Model
 # from keras.optimizers import SGD
 
 
@@ -62,6 +63,10 @@ class TerminationPolicy(Policy):
                   kernel_initializer='random_uniform',),  # TODO or maybe random_normal
             Activation('sigmoid')
         ])
+
+        # Accuracy is not the right measure for your model's performance. What you are trying to do here is more of a
+        # regression task than a classification task. The same can be seen from your loss function, you are using
+        # 'mean_squared_error' rather than something like 'categorical_crossentropy'.
         self.model.compile(optimizer='adam',
                            loss='binary_crossentropy',  # TODO these are random, needs to be checked
                            metrics=['accuracy'])
@@ -90,6 +95,7 @@ class TerminationPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
+        print('train batch wtf', x.shape, y.shape, sample_weight.shape)
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
         return out
 
@@ -100,34 +106,49 @@ class UtterancePolicy(Policy):
     For the first timestep, a dummy symbol is fed in as input;
     subsequently, the model prediction from the previous timestep is fed in as input at the next timestep,
     in order to predict the next symbol
+
+    The symbol vocabulary size was 11, and the agents were allowed to generate utterances of up to length 6.
     """
-    def __init__(self, hidden_state_size, is_on=False, entropy_reg=0.001):
+    def __init__(self, hidden_state_size, is_on=True, entropy_reg=0.001, vocab_size=11, max_len=6):
         self.is_on = is_on
+        self.max_len = max_len
+        self.vocab = list(range(1, 11))
+
         if self.is_on:
-            self.model = Sequential([
-                LSTM(hidden_state_size, input_shape=(hidden_state_size, 1))
-            ])
+            print('yes we are on!')
+            inputs = Input(shape=(1, 1))
+            lstm1, state_h, state_c = LSTM(100, return_state=True, return_sequences=True)(inputs)
+            dense = Dense(6, activation='softmax')(lstm1)
+            self.model = Model(inputs=inputs, outputs=[dense, state_h, state_c])
             self.model.compile(optimizer='adam',
-                               loss='mse',  # TODO these are random, needs to be checked
+                               loss='sparse_categorical_crossentropy',
                                metrics=['accuracy'])
 
     @property
     def dummy(self):
         return np.zeros(6)
 
+    @property
+    def dummy_symbol(self):
+        return np.zeros((1, 1, 1))
+
     def forward(self, hidden_state):
         if not self.is_on:
             utterance = self.dummy
         else:
-            hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
-            self.input_is_valid(hidden_state)
-            utterance = self.model.predict(hidden_state)
+            # hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
+            # self.input_is_valid(hidden_state)
+            # TODO: should take hidden state as an initial state
+            utterance, h_c, h_t = self.model.predict(self.dummy_symbol, steps=self.max_len)
+            utterance = [self.vocab[out[0].argmax()] for out in utterance]
+            print('this is utterance!!', utterance)
+
         self.output_is_valid(utterance, (6,))
         return utterance
 
     def train(self, x, y, sample_weight):
         if self.is_on:
-            pass  # TODO !!!!!!!
+            self.model.train_on_batch(x, y, sample_weight)
 
 
 class ProposalPolicy(Policy):
@@ -198,7 +219,7 @@ class Agent:
         # policies
         self.termination_policy = TerminationPolicy(hidden_state_size)
         self.utterance_policy = UtterancePolicy(hidden_state_size, is_on=linguistic_channel)
-        self.proposal_policy = ProposalPolicy(is_on=proposal_channel, hidden_state_size=hidden_state_size)
+        self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel)
 
         # NumberSequenceEncoders
         self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)  # is this correct?
