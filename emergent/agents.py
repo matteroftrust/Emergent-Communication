@@ -116,13 +116,22 @@ class UtterancePolicy(Policy):
 
         if self.is_on:
             print('yes we are on!')
-            inputs = Input(shape=(1, 1))
-            lstm1, state_h, state_c = LSTM(100, return_state=True, return_sequences=True)(inputs)
-            dense = Dense(6, activation='softmax')(lstm1)
-            self.model = Model(inputs=inputs, outputs=[dense, state_h, state_c])
-            self.model.compile(optimizer='adam',
+            inputs = Input(batch_shape=(1, 1, 1), name='utter_input')
+            lstm1, state, sequences = LSTM(100, stateful=True, return_state=True, return_sequences=True, name='utter_lstm')(inputs)
+            dense = Dense(6, activation='softmax', name='utter_dense')(lstm1)
+            model = Model(inputs=inputs, outputs=[dense])
+            model.compile(optimizer='adam',
                                loss='sparse_categorical_crossentropy',
                                metrics=['accuracy'])
+            self.model = model
+
+
+            # model = Sequential()
+            # model.add(LSTM(100, batch_input_shape=(1, 1, 1), stateful=True))
+            # model.add(Dense(6, activation='softmax'))
+            # model.compile(optimizer='adam',
+            #               loss='sparse_categorical_crossentropy',
+            #               metrics=['accuracy'])
 
     @property
     def dummy(self):
@@ -139,8 +148,12 @@ class UtterancePolicy(Policy):
             # hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
             # self.input_is_valid(hidden_state)
             # TODO: should take hidden state as an initial state
-            utterance, h_c, h_t = self.model.predict(self.dummy_symbol, steps=self.max_len)
-            utterance = [self.vocab[out[0].argmax()] for out in utterance]
+            if hidden_state is not None:  # if hidden state is passed then we set is as a new LSTM state
+                self.model.layers[1].states[0] = hidden_state
+            utterance = [self.vocab[self.model.predict(self.dummy_symbol).argmax()]]
+            for i in range(5):
+                last_symbol = utterance[-1] * np.ones((1, 1, 1))
+                utterance.append(self.vocab[self.model.predict(last_symbol).argmax()])
             print('this is utterance!!', utterance)
 
         self.output_is_valid(utterance, (6,))
