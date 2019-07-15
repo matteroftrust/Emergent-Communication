@@ -239,7 +239,7 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 5 == 0:  # TODO remember it should be 50!
+            if i % 20 == 0:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 print('Episode {}'.format(i))
@@ -355,7 +355,7 @@ class Game:
         agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
         agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
 
-        print('Reinforce done!!!!!')
+        # print('Reinforce done!!!!!')
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
