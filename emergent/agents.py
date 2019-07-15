@@ -137,7 +137,7 @@ class UtterancePolicy(Policy):
 
     @property
     def dummy(self):
-        return np.zeros(6)
+        return np.zeros(self.utterance_len)
 
     @property
     def dummy_symbol(self):
@@ -230,10 +230,8 @@ class Agent:
 
     id_generator = itertools.count()
 
-    def __init__(self, lambda_termination, lambda_proposal,
-                 lambda_utterance, hidden_state_size, vocab_size,
-                 dim_size, utterance_len, discount_factor, learning_rate,
-                 proposal_channel, linguistic_channel):
+    def __init__(self, hidden_state_size, vocab_size, dim_size, utterance_len, discount_factor, learning_rate,
+                 proposal_channel, linguistic_channel, lambda_termination, lambda_utterance, lambda_proposal):
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate

@@ -228,7 +228,7 @@ class Game:
                 return agent
         return None
 
-    def play(self):
+    def play(self, save_as=''):
         results = []
 
         if self.prosocial:  # if prosocial we do need only a prosocial reward R = R_A + R_B
@@ -249,7 +249,7 @@ class Game:
 
             baseline = self.reinforce(batch, baseline)
         now = dt.now()
-        with open('results/results{}.pkl'.format(str(now)), 'wb') as handle:
+        with open('results/{}results{}.pkl'.format(save_as, str(now)), 'wb') as handle:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
     def next_episode(self, test=False):
