@@ -7,6 +7,13 @@ from datetime import datetime as dt
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
 
 
+def zscore2(arr):
+    zscored = zscore(arr)
+    if np.isnan(zscored).any():
+        return arr
+    return zscored
+
+
 class Action:
     """
     A negotiation message.
@@ -117,6 +124,7 @@ class StateBatch:
         rewards_1 = []
 
         self.rewards = [self.rewards_0, self.rewards_1]
+        # print('rewardss before\n', self.rewards)
 
         # subtract baseline
         baseline = .7 * baseline + .3 * np.mean(self.rewards, 1)
@@ -124,7 +132,7 @@ class StateBatch:
         if prosocial:
             self.rewards[0] = self.rewards[0] - baseline[0]
             if not all(reward == 0 for reward in self.rewards[0]):
-                self.rewards[0] = zscore(self.rewards[0])
+                self.rewards[0] = zscore2(self.rewards[0])
 
         else:
             self.rewards[0] = self.rewards[0] - baseline[0]
@@ -132,9 +140,9 @@ class StateBatch:
 
             # standardize rewards
             if not all(reward == 0 for reward in self.rewards[0]):
-                self.rewards[0] = zscore(self.rewards[0])
+                self.rewards[0] = zscore2(self.rewards[0])
             if not all(reward == 0 for reward in self.rewards[1]):
-                self.rewards[1] = zscore(self.rewards[1])
+                self.rewards[1] = zscore2(self.rewards[1])
 
         for i in range(len(self.ns)):
 
@@ -183,6 +191,7 @@ class StateBatch:
         print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
+        # print('rewardss after\n', rewards)
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
 
 
@@ -211,9 +220,10 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 5:  # TODO remember it should be 50!
+            if i % 5 == 0:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
+                print('Episode {}'.format(i))
 
             print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch = self.next_episode()
@@ -307,9 +317,14 @@ class Game:
             # TODO
             pass
         else:
-            rewards[0] = zscore(rewards[0])
-            rewards[1] = zscore(rewards[1])
-
+            rewards[0] = zscore2(rewards[0])
+            rewards[1] = zscore2(rewards[1])
+        # print('all that she wants:\n----------------------------------------------\n')
+        # msgs = ['x_0', 'x_1', 'y_termination_0', 'y_termination_1', 'y_proposal_0', 'y_proposal_1', 'rewards_0', 'rewards_1']
+        # ars = [x_0[:10], x_1[:10], y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards[0], rewards[1]]
+        # for msg, ar in zip(msgs, ars):
+        #     print(msg, ar)
+        # print('----------------------------------------')
         # print('gradient', get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])

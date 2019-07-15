@@ -5,21 +5,19 @@ from datetime import datetime as dt
 def load_settings(config_file='config.ini'):
     config = SafeConfigParser()
     config.read('config.ini')
-    print('what is config?', config)
     project_settings = ProjectSettings(**dict(config.items('project_settings')))
     agent_settings = AgentSettings(**dict(config.items('agent_settings')))
     game_settings = GameSettings(**dict(config.items('game_settings')))
-
 
     return project_settings, agent_settings, game_settings
 
 
 class Settings():
     def __str__(self):
-        text = 'Settings:\n'
-        attributes = self.as_dict.items()
+        text = '\{}:\n'.format(self.__class__.__name__)
+        attributes = self.as_dict().items()
         for key, value in attributes:
-            attr_text = '{}: {}\n'.format(key, value)
+            attr_text = '\t{}: {}\n'.format(key, value)
             text = text + attr_text
         return text[:-1]
 

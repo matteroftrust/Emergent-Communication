@@ -40,9 +40,6 @@ if __name__ == '__main__':
     channels = args.__dict__['channels'].split(',')
     prosocial = args.__dict__['prosocial']
 
-    print('Settings:\prompt: {}\nvalidation: {}\nbatch_size: {}\ntest_batch_size: {}\nepisode_num: {}'.format(
-          prompt, validation, batch_size, test_batch_size, episode_num))
-
     config = SafeConfigParser()
     config.read('config.ini')
     config.add_section('project_settings')
@@ -74,6 +71,9 @@ if __name__ == '__main__':
     # )
 
     project_settings, agent_settings, game_settings = emergent.settings.load_settings()
+
+    for settings in [project_settings, agent_settings, game_settings]:
+        print(settings)
 
     print_status('### Agents initialization. ###\n')
     agents = emergent.Agent.create_agents(n=2, **agent_settings.as_dict())

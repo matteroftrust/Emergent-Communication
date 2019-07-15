@@ -95,7 +95,6 @@ class TerminationPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
-        print('train batch wtf', x.shape, y.shape, sample_weight.shape)
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
         return out
 
@@ -109,20 +108,25 @@ class UtterancePolicy(Policy):
 
     The symbol vocabulary size was 11, and the agents were allowed to generate utterances of up to length 6.
     """
-    def __init__(self, hidden_state_size, is_on=True, entropy_reg=0.001, vocab_size=11, max_len=6):
+    def __init__(self, hidden_state_size, is_on=True, entropy_reg=0.001, vocab_size=11, utterance_len=6):
         self.is_on = is_on
-        self.max_len = max_len
-        self.vocab = list(range(1, 11))
+        self.utterance_len = utterance_len
+        self.vocab = list(range(vocab_size))
+        self.vocab_size = vocab_size
 
         if self.is_on:
-            print('yes we are on!')
             inputs = Input(batch_shape=(1, 1, 1), name='utter_input')
-            lstm1, state, sequences = LSTM(100, stateful=True, return_state=True, return_sequences=True, name='utter_lstm')(inputs)
-            dense = Dense(6, activation='softmax', name='utter_dense')(lstm1)
+            lstm1 = LSTM(100, stateful=True, return_state=False, return_sequences=False, name='utter_lstm')(inputs)
+            # lstm1, state, sequences = LSTM(100, stateful=True, return_state=True, return_sequences=True, name='utter_lstm')(inputs)
+            dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
             model = Model(inputs=inputs, outputs=[dense])
             model.compile(optimizer='adam',
-                               loss='sparse_categorical_crossentropy',
-                               metrics=['accuracy'])
+                          loss='mse',
+                          # TODO might be cool to use the one below (requires different shape in training)
+                          # loss='sparse_categorical_crossentropy',
+                          metrics=['accuracy'],
+                          # sample_weight_mode="temporal"
+                          )
             self.model = model
 
 
@@ -147,21 +151,29 @@ class UtterancePolicy(Policy):
         else:
             # hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
             # self.input_is_valid(hidden_state)
-            # TODO: should take hidden state as an initial state
             if hidden_state is not None:  # if hidden state is passed then we set is as a new LSTM state
                 self.model.layers[1].states[0] = hidden_state
             utterance = [self.vocab[self.model.predict(self.dummy_symbol).argmax()]]
-            for i in range(5):
+            for i in range(self.utterance_len - 1):
                 last_symbol = utterance[-1] * np.ones((1, 1, 1))
-                utterance.append(self.vocab[self.model.predict(last_symbol).argmax()])
-            print('this is utterance!!', utterance)
+                arg_max = self.model.predict(last_symbol).argmax()
+                utterance.append(self.vocab[arg_max])
+            print_all('this is utterance!!', utterance)
 
         self.output_is_valid(utterance, (6,))
         return utterance
 
     def train(self, x, y, sample_weight):
         if self.is_on:
-            self.model.train_on_batch(x, y, sample_weight)
+            for xx, yy, ssww in zip(x, y, sample_weight):
+                inputs = [self.dummy_symbol] + yy[-1]
+                ssww = np.array([ssww])
+                for xxx, yyy in zip(inputs, yy):
+                    # print('pewnie kurwa nie dziala xysw', xx.shape, yy.shape, ssww.shape)
+                    ar = np.zeros(self.vocab_size)
+                    ar[yyy] = 1
+                    yyy = ar.reshape(1, self.vocab_size)
+                    self.model.train_on_batch(xxx, yyy, sample_weight=ssww)
 
 
 class ProposalPolicy(Policy):
@@ -206,7 +218,9 @@ class ProposalPolicy(Policy):
     def train(self, x, y, sample_weight):
         if self.is_on:
             for i in range(self.item_num):
-                self.models[i].train_on_batch(x, convert_to_sparse(y[:, i], 6), sample_weight=sample_weight)
+                y = convert_to_sparse(y[:, i], 6)
+                # print('whats there for training in proposal policy??? \n', x.shape, y.shape, sample_weight.shape)
+                self.models[i].train_on_batch(x, y, sample_weight=sample_weight)
 
     def get_weights(self):
         out = [model.get_weights() for model in self.models]
@@ -231,13 +245,15 @@ class Agent:
 
         # policies
         self.termination_policy = TerminationPolicy(hidden_state_size)
-        self.utterance_policy = UtterancePolicy(hidden_state_size, is_on=linguistic_channel)
+        self.utterance_policy = UtterancePolicy(hidden_state_size=hidden_state_size, is_on=linguistic_channel,
+                                                vocab_size=vocab_size, utterance_len=utterance_len)
         self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel)
 
         # NumberSequenceEncoders
+        # TODO: input_dim seems to be wrong in here!
         self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)  # is this correct?
         # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=utterance_len, output_dim=hidden_state_size)
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
         self.core_layer_model = Sequential([
