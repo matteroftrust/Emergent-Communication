@@ -60,7 +60,8 @@ class TerminationPolicy(Policy):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
             Dense(1, input_shape=(hidden_state_size,),
-                  kernel_initializer='random_uniform',  # TODO or maybe random_normal
+                  # kernel_initializer='random_uniform',  # TODO or maybe random_normal
+                  kernel_initializer='random_normal',  # TODO or maybe random_normal
                   activity_regularizer=regularizers.l1(entropy_reg)
                   ),
             Activation('sigmoid')

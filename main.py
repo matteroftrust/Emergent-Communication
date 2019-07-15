@@ -11,7 +11,6 @@ if __name__ == '__main__':
     # https://docs.python.org/3.6/library/profile.html
 
     if os.path.isfile('config.ini'):
-        print('removinnn')
         os.remove('config.ini')
 
     for dir in ['results', 'figs']:

@@ -121,7 +121,6 @@ class StateBatch:
         for key in keys:
             self.__dict__[key] = np.array(self.__dict__[key])
 
-
     @classmethod
     def compute_discounted_rewards(self, trajectory, reward, discount_factor=0.99):
 
@@ -275,7 +274,8 @@ class Game:
     def negotiations(self, item_pool, n, test=False):
         action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
-        rand_0_or_1 = random_integers(0, 1)
+        # rand_0_or_1 = random_integers(0, 1)
+        rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
         negotiations = []
