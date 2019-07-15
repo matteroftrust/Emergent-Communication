@@ -66,8 +66,10 @@ class StateBatch:
         self.hidden_states_0 = []
         self.hidden_states_1 = []
         self.ns = []
+        self.utilities_0 = []
+        self.utilities_1 = []
 
-    def append(self, i, n, trajectory, rewards, item_pool, hidden_states, max_trajectory_len=10):
+    def append(self, i, n, trajectory, rewards, item_pool, hidden_states, utilities, max_trajectory_len=10):
 
         hidden_states = [HiddenState(hs) for hs in hidden_states]
         trajectory_odd = trajectory[::2]
@@ -101,6 +103,9 @@ class StateBatch:
         self.item_pools.append(item_pool)
         self.ns.append(n)  # do we even need this now? maybe for regularization later?
 
+        self.utilities_0.append(utilities[0])
+        self.utilities_1.append(utilities[1])
+
     def concatenate(self, batch):
         self.trajectories_0.append(batch.trajectories_0)
         self.trajectories_1.append(batch.trajectories_1)
@@ -108,6 +113,14 @@ class StateBatch:
         self.rewards_0.append(batch.rewards_0)
         self.rewards_1.append(batch.rewards_1)
         self.ns.append(batch.ns)
+        self.utilities_0.append(batch.utilities_0)
+        self.utilities_1.append(batch.utilities_1)
+
+    def numpize(self):
+        keys = self.__dict__.keys()
+        for key in keys:
+            self.__dict__[key] = np.array(self.__dict__[key])
+
 
     @classmethod
     def compute_discounted_rewards(self, trajectory, reward, discount_factor=0.99):
@@ -210,6 +223,12 @@ class Game:
         self.episode_num = episode_num
         self.prosocial = prosocial
 
+    def get_agent(self, id):
+        for agent in self.agents:
+            if agent.id == id:
+                return agent
+        return None
+
     def play(self):
         results = []
 
@@ -248,7 +267,8 @@ class Game:
 
             item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
 
-            batch.append(i, n, negotiations, rewards, item_pool, hidden_states)
+            batch.append(i, n, trajectory=negotiations, rewards=rewards, item_pool=item_pool,
+                         hidden_states=hidden_states, utilities=[self.get_agent(0).utilities, self.get_agent(1).utilities])
 
         return batch
 

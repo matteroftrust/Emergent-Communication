@@ -5,7 +5,7 @@ import numpy as np
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras import Input
+from keras import Input, regularizers
 from keras.layers import Dense, Activation, LSTM
 from keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
@@ -60,7 +60,9 @@ class TerminationPolicy(Policy):
         # single feedforward layer with sigmoid function
         self.model = Sequential([
             Dense(1, input_shape=(hidden_state_size,),
-                  kernel_initializer='random_uniform',),  # TODO or maybe random_normal
+                  kernel_initializer='random_uniform',  # TODO or maybe random_normal
+                  activity_regularizer=regularizers.l1(entropy_reg)
+                  ),
             Activation('sigmoid')
         ])
 
@@ -108,7 +110,10 @@ class UtterancePolicy(Policy):
 
     The symbol vocabulary size was 11, and the agents were allowed to generate utterances of up to length 6.
     """
-    def __init__(self, hidden_state_size, is_on=True, entropy_reg=0.001, vocab_size=11, utterance_len=6):
+    def __init__(self, hidden_state_size, is_on=True, vocab_size=11, utterance_len=6, entropy_reg=0.001):
+        """
+        lambda is an entropy regularization term
+        """
         self.is_on = is_on
         self.utterance_len = utterance_len
         self.vocab = list(range(vocab_size))
@@ -116,8 +121,8 @@ class UtterancePolicy(Policy):
 
         if self.is_on:
             inputs = Input(batch_shape=(1, 1, 1), name='utter_input')
-            lstm1 = LSTM(100, stateful=True, return_state=False, return_sequences=False, name='utter_lstm')(inputs)
-            # lstm1, state, sequences = LSTM(100, stateful=True, return_state=True, return_sequences=True, name='utter_lstm')(inputs)
+            lstm1 = LSTM(100, stateful=True, name='utter_lstm',
+                         activity_regularizer=regularizers.l1(entropy_reg))(inputs)
             dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
             model = Model(inputs=inputs, outputs=[dense])
             model.compile(optimizer='adam',
@@ -128,14 +133,6 @@ class UtterancePolicy(Policy):
                           # sample_weight_mode="temporal"
                           )
             self.model = model
-
-
-            # model = Sequential()
-            # model.add(LSTM(100, batch_input_shape=(1, 1, 1), stateful=True))
-            # model.add(Dense(6, activation='softmax'))
-            # model.compile(optimizer='adam',
-            #               loss='sparse_categorical_crossentropy',
-            #               metrics=['accuracy'])
 
     @property
     def dummy(self):
@@ -188,7 +185,8 @@ class ProposalPolicy(Policy):
             self.models = []
             for _ in range(self.item_num):
                 model = Sequential([
-                    Dense(6, input_shape=(hidden_state_size,)),
+                    Dense(6, input_shape=(hidden_state_size,),
+                          activity_regularizer=regularizers.l1(entropy_reg)),
                     Activation('softmax')
                 ])
                 model.compile(optimizer='adam',
@@ -239,15 +237,11 @@ class Agent:
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
 
-        self.lambda_termination = lambda_termination
-        self.lambda_proposal = lambda_proposal
-        self.lambda_utterance = lambda_utterance
-
         # policies
-        self.termination_policy = TerminationPolicy(hidden_state_size)
+        self.termination_policy = TerminationPolicy(hidden_state_size, entropy_reg=lambda_termination)
         self.utterance_policy = UtterancePolicy(hidden_state_size=hidden_state_size, is_on=linguistic_channel,
-                                                vocab_size=vocab_size, utterance_len=utterance_len)
-        self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel)
+                                                vocab_size=vocab_size, utterance_len=utterance_len, entropy_reg=lambda_utterance)
+        self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel, entropy_reg=lambda_proposal)
 
         # NumberSequenceEncoders
         # TODO: input_dim seems to be wrong in here!
