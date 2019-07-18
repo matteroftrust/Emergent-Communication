@@ -2,6 +2,5 @@
 from .settings import settings
 from .game import Action, Game
 from .agents import NumberSequenceEncoder, TerminationPolicy, UtterancePolicy, ProposalPolicy, Agent
-from .test import *
 
 # from .agents import *
