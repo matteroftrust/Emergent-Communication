@@ -4,7 +4,7 @@ import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad, generate_util_fun
 
 
 def zscore2(arr):
@@ -253,16 +253,18 @@ class Game:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
     def next_episode(self, test=False):
+        item_pool_list = generate_item_pool(self.batch_size)
+        negotiation_time_list = generate_negotiation_time(self.batch_size)
+        util_fun_list_0 = generate_util_fun(self.batch_size)
+        util_fun_list_1 = generate_util_fun(self.batch_size)
+        # negotiations = np.array()
+
         batch = StateBatch()
-        # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
-        # TODO whould be faster to generate data here
+
         for i in range(self.batch_size):
-            print_status('Starting batch {}'.format(i))
-            # beginning of new round. item pool and utility funcions generation
-            item_pool = generate_item_pool()
-            negotiation_time = generate_negotiation_time()
-            for agent in self.agents:
-                agent.generate_util_fun()
+            item_pool = item_pool_list[i]
+            negotiation_time = negotiation_time_list[i]
+            self.agents[0].utilities, self.agents[1].utilities = util_fun_list_0[i], util_fun_list_1[i]
 
             item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
 
@@ -270,6 +272,26 @@ class Game:
                          hidden_states=hidden_states, utilities=[self.get_agent(0).utilities, self.get_agent(1).utilities])
 
         return batch
+
+
+            #######################################################
+
+        # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
+        # TODO whould be faster to generate data here
+        # for i in range(self.batch_size):
+        #     print_status('Starting batch {}'.format(i))
+        #     # beginning of new round. item pool and utility funcions generation
+        #     item_pool = generate_item_pool()
+        #     negotiation_time = generate_negotiation_time()
+        #     for agent in self.agents:
+        #         agent.generate_util_fun()
+        #
+        #     item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
+        #
+        #     batch.append(i, n, trajectory=negotiations, rewards=rewards, item_pool=item_pool,
+        #                  hidden_states=hidden_states, utilities=[self.get_agent(0).utilities, self.get_agent(1).utilities])
+        #
+        # return batch
 
     def negotiations(self, item_pool, n, test=False):
         action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated

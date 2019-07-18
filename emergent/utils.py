@@ -17,19 +17,37 @@ class Results:
         self.item_pools
 
 
-def generate_item_pool():
-    return random_integers(0, 5, 3)
+def generate_item_pool(batch_size):
+    return random_integers(0, 5, (batch_size, 3))  # on average bout 0.46% are empty which is a bit wrong
 
 
-def generate_negotiation_time():
+def generate_negotiation_time(batch_size):
     """
     Generate negotiation time ampled from truncated Poisson distribution.
-    TODO it should be truncated Poisson but this one is not I guess! Needs to be checked!
     """
-    while True:
-        out = poisson(7, 1)
-        if out >= 4 and out <= 10:
-            return int(out)
+    # TODO any faster way?
+    out = poisson(7, batch_size)
+    mask = (out < 4) + (out > 10)
+    while sum(mask) != 0:
+        out[mask] = poisson(7, sum(mask))
+        mask = (out < 4) + (out > 10)
+    return out
+
+
+def generate_util_fun(batch_size):
+    out = random_integers(0, 10, (batch_size, 3))
+    mask = out == np.zeros(3)
+    mask = mask.sum(axis=1) == 3
+    while sum(mask) != 0:
+        out[mask] = random_integers(0, 10, (sum(mask), 3))
+        mask = out == np.zeros(3)
+        mask = mask.sum(axis=1) == 3
+    return out
+    # while True:
+    #     out = random_integers(0, 10, 3)
+    #     if list(out) != [0, 0, 0]:
+    #         self.utilities = out
+    #         return out
 
 
 def print_all(*args, **kwargs):
