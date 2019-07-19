@@ -209,7 +209,7 @@ class StateBatch:
 
 class Game:
 
-    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3, prosocial=False):
+    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3, prosocial=False, test_every=50):
         self.rounds = []
         self.i = 0
         self.agents = agents  # list of agents
@@ -221,6 +221,7 @@ class Game:
         self.test_batch_size = test_batch_size
         self.episode_num = episode_num
         self.prosocial = prosocial
+        self.test_every = test_every
 
     def get_agent(self, id):
         for agent in self.agents:
@@ -238,7 +239,7 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 50 == 0:  # TODO remember it should be 50!
+            if i % self.test_every == 0:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 print('Episode {}'.format(i))
