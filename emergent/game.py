@@ -238,7 +238,7 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % 20 == 0:  # TODO remember it should be 50!
+            if i % 50 == 0:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 print('Episode {}'.format(i))
@@ -284,8 +284,10 @@ class Game:
         for t in range(n):
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
 
+            termination_true = t == 0
+
             context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, test=test)  # if communication channel is closed utterance is a dummy
+            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, test=test, termination_true=termination_true)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
             print_all('we are in t: {} and action is {}'.format(t, action))

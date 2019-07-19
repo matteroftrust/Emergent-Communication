@@ -273,14 +273,17 @@ class Agent:
                 self.utilities = out
                 return out
 
-    def propose(self, context, utterance, proposal, test=False):
+    def propose(self, context, utterance, proposal, test=False, termination_true=False):
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
         input = np.reshape(input, (1, 1500))
         hidden_state = self.core_layer(input)
         hidden_state = np.reshape(hidden_state, (100,))
 
-        termination = self.termination_policy(hidden_state, test=test)
+        if termination_true:
+            termination = False
+        else:
+            termination = self.termination_policy(hidden_state, test=test)
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
         proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
         hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
