@@ -1,5 +1,6 @@
 from configparser import SafeConfigParser
 import argparse
+import dt
 import os
 
 
@@ -27,8 +28,10 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channels', dest='channels')
     parser.add_argument('--prosocial', dest='prosocial')
     parser.add_argument('-te', '--test_every', dest='test_every', type=int)
+    parser.add_argument('-f', '--filename', dest='filename')
     parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2,
-                        acceleration=False, channels='proposal', prosocial=False, test_every=50)
+                        acceleration=False, channels='proposal', prosocial=False, test_every=50,
+                        filename=str(dt.datetime.today()).replace(' ', '').replace(':', '').replace('.', ''))
     args = parser.parse_args()
 
     prompt = args.__dict__['prompt']
@@ -40,6 +43,7 @@ if __name__ == '__main__':
     channels = args.__dict__['channels'].split(',')
     prosocial = args.__dict__['prosocial']
     test_every = args.__dict__['test_every']
+    filename = args.__dict__['filename']
 
     config = SafeConfigParser()
     config.read('config.ini')
@@ -54,6 +58,7 @@ if __name__ == '__main__':
     config.set('game_settings', 'episode_num', str(episode_num))
     config.set('game_settings', 'prosocial', str(prosocial))
     config.set('game_settings', 'test_every', str(test_every))
+    config.set('game_settings', 'filename', str(filename))
 
     config.add_section('agent_settings')
     config.set('agent_settings', 'linguistic_channel', str('linguistic' in channels))

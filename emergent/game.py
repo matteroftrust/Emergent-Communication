@@ -209,7 +209,7 @@ class StateBatch:
 
 class Game:
 
-    def __init__(self, agents, batch_size, test_batch_size, episode_num, item_num=3, prosocial=False, test_every=50):
+    def __init__(self, agents, batch_size, test_batch_size, episode_num, filename, item_num=3, prosocial=False, test_every=50):
         self.rounds = []
         self.i = 0
         self.agents = agents  # list of agents
@@ -222,6 +222,8 @@ class Game:
         self.episode_num = episode_num
         self.prosocial = prosocial
         self.test_every = test_every
+
+        self.filename = filename
 
     def get_agent(self, id):
         for agent in self.agents:
@@ -249,8 +251,7 @@ class Game:
             # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
 
             baseline = self.reinforce(batch, baseline)
-        now = dt.now()
-        with open('results/{}results{}.pkl'.format(save_as, str(now)), 'wb') as handle:
+        with open('results/{}.pkl'.format(self.filename), 'wb') as handle:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
     def next_episode(self, test=False):

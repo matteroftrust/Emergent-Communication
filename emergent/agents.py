@@ -5,7 +5,7 @@ import numpy as np
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras import Input, regularizers
+from keras import Input, regularizers, optimizers
 from keras.layers import Dense, Activation, LSTM
 from keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
@@ -70,9 +70,13 @@ class TerminationPolicy(Policy):
         # Accuracy is not the right measure for your model's performance. What you are trying to do here is more of a
         # regression task than a classification task. The same can be seen from your loss function, you are using
         # 'mean_squared_error' rather than something like 'categorical_crossentropy'.
-        self.model.compile(optimizer='adam',
-                           loss='binary_crossentropy',  # TODO these are random, needs to be checked
-                           metrics=['accuracy'])
+        optimizer = optimizers.Adam()
+                                    # lr=learning_rate  0.001 by default which is fine
+
+        self.model.compile(optimizer=optimizer,
+                           loss='binary_crossentropy'  # TODO these are random, needs to be checked
+                           # metrics=['accuracy']
+                           )
         # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
         # # self.model.compile(loss='categorical_crossentropy',
         # self.model.compile(loss='mean_squared_error',
@@ -127,10 +131,10 @@ class UtterancePolicy(Policy):
             dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
             model = Model(inputs=inputs, outputs=[dense])
             model.compile(optimizer='adam',
-                          loss='mse',
+                          loss='binary_crossentropy'
                           # TODO might be cool to use the one below (requires different shape in training)
                           # loss='sparse_categorical_crossentropy',
-                          metrics=['accuracy'],
+                          # metrics=['accuracy'],
                           # sample_weight_mode="temporal"
                           )
             self.model = model
@@ -186,13 +190,14 @@ class ProposalPolicy(Policy):
             self.models = []
             for _ in range(self.item_num):
                 model = Sequential([
-                    Dense(6, input_shape=(hidden_state_size,),
-                          activity_regularizer=regularizers.l1(entropy_reg)),
+                    Dense(100, input_shape=(hidden_state_size,)),
+                    Dense(6, activity_regularizer=regularizers.l1(entropy_reg)),
                     Activation('softmax')
                 ])
                 model.compile(optimizer='adam',
-                              loss='mse',  # TODO these are random, needs to be checked
-                              metrics=['accuracy'])
+                              loss='binary_crossentropy'  # TODO these are random, needs to be checked
+                              # metrics=['accuracy']
+                              )
 
                 self.models.append(model)
 
