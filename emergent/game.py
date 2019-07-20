@@ -259,7 +259,7 @@ class Game:
         # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         # TODO whould be faster to generate data here
         for i in range(self.batch_size):
-            print_status('Starting batch {}'.format(i))
+            # print_status('Starting batch {}'.format(i))
             # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()
             negotiation_time = generate_negotiation_time()
@@ -282,6 +282,7 @@ class Game:
         hearer = self.agents[1 - rand_0_or_1]
         negotiations = []
         hidden_states = []
+        # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
 
         for t in range(n):
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
@@ -289,30 +290,33 @@ class Game:
             termination_true = t == 0
 
             context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, test=test, termination_true=termination_true)  # if communication channel is closed utterance is a dummy
+            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, termination_true=termination_true,
+                                                    test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
-            print_all('we are in t: {} and action is {}'.format(t, action))
+            # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
 
             if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
-                print_status('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
+                # print_status('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
                 # n = t + 1
                 break  # if terminate then negotiations are over
 
-        rewards = self.compute_rewards(item_pool, action, proposer, hearer)
+        rewards = self.compute_rewards(item_pool, negotiations[-2:], proposer, hearer)
+        # print_status('negotiations finished.\nagent {} reward {}\nagent {} reward {}'.format(proposer.id, rewards[0], hearer.id, rewards[1]))
         return item_pool, negotiations, rewards, n, hidden_states
 
-    def compute_rewards(self, item_pool, action, proposer, hearer):
+    def compute_rewards(self, item_pool, actions, proposer, hearer):
         """
         Method for generating rewards.
+        actions contains 2 actions, previous one (with proposal agents agreed on) and last one to check if action is valid.
         """
-        if action.is_valid(item_pool) and action.terminate:  # if proposal is valid and terminated
-            reward_proposer = np.dot(proposer.utilities, action.proposal)
-            reward_hearer = np.dot(hearer.utilities, item_pool - action.proposal)
+        if actions[1].is_valid(item_pool) and actions[1].terminate:  # if proposal is valid and terminated
+            reward_proposer = np.dot(proposer.utilities, item_pool - actions[0].proposal)
+            reward_hearer = np.dot(hearer.utilities, actions[0].proposal)
         else:
             reward_proposer = 0
             reward_hearer = 0
-        print_status('what are the rewards?', reward_proposer, reward_hearer)
+        # print_status('what are the rewards?', reward_proposer, reward_hearer)
         return [reward_proposer, reward_hearer]
 
     def tests(self):

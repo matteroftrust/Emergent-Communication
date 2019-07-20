@@ -11,6 +11,7 @@ from keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
 from keras.models import Sequential, Model
 # from keras.optimizers import SGD
+from keras.utils import to_categorical
 
 
 class NumberSequenceEncoder:
@@ -131,7 +132,7 @@ class UtterancePolicy(Policy):
             dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
             model = Model(inputs=inputs, outputs=[dense])
             model.compile(optimizer='adam',
-                          loss='binary_crossentropy'
+                          loss='categorical_crossentropy'
                           # TODO might be cool to use the one below (requires different shape in training)
                           # loss='sparse_categorical_crossentropy',
                           # metrics=['accuracy'],
@@ -160,7 +161,8 @@ class UtterancePolicy(Policy):
                 last_symbol = utterance[-1] * np.ones((1, 1, 1))
                 arg_max = self.model.predict(last_symbol).argmax()
                 utterance.append(self.vocab[arg_max])
-            print_all('this is utterance!!', utterance)
+            utterance = np.array(utterance)
+            print_all('this is utterance!!', utterance, type(utterance))
 
         self.output_is_valid(utterance, (6,))
         return utterance
@@ -170,12 +172,11 @@ class UtterancePolicy(Policy):
             for xx, yy, ssww in zip(x, y, sample_weight):
                 inputs = [self.dummy_symbol] + yy[-1]
                 ssww = np.array([ssww])
-                for xxx, yyy in zip(inputs, yy):
-                    # print('pewnie kurwa nie dziala xysw', xx.shape, yy.shape, ssww.shape)
-                    ar = np.zeros(self.vocab_size)
-                    ar[yyy] = 1
-                    yyy = ar.reshape(1, self.vocab_size)
-                    self.model.train_on_batch(xxx, yyy, sample_weight=ssww)
+                yy_categorical = to_categorical(yy, num_classes=self.vocab_size).reshape(-1, 1, self.vocab_size)
+                # self.model.train_on_batch(xx, yy)
+                for xxx, yyy in zip(inputs, yy_categorical):
+                    print('what are the shapes bitch', xxx.shape, np.array(yyy).shape, ssww.shape)
+                    self.model.train_on_batch(xxx, np.array(yyy), sample_weight=ssww)
 
 
 class ProposalPolicy(Policy):
@@ -205,9 +206,11 @@ class ProposalPolicy(Policy):
     def dummy(self):
         return np.zeros(self.item_num)
 
-    def forward(self, hidden_state):
+    def forward(self, hidden_state, **kwargs):
         self.input_is_valid(hidden_state)
         if not self.is_on:
+            if 'item_pool' in kwargs:
+                return kwargs['item_pool']
             return self.dummy
         hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
@@ -278,7 +281,7 @@ class Agent:
                 self.utilities = out
                 return out
 
-    def propose(self, context, utterance, proposal, test=False, termination_true=False):
+    def propose(self, context, utterance, proposal, termination_true=False, test=False, **kwargs):
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
         input = np.reshape(input, (1, 1500))
@@ -290,7 +293,7 @@ class Agent:
         else:
             termination = self.termination_policy(hidden_state, test=test)
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
-        proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
+        proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
         hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from data_processing import load_results, compute_batch
+from emergent.data_processing import load_results, compute_batch
 
 
 if __name__ == '__main__':

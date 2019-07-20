@@ -1,6 +1,6 @@
 from configparser import SafeConfigParser
 import argparse
-import dt
+import datetime as dt
 import os
 
 
@@ -95,3 +95,4 @@ if __name__ == '__main__':
     print_status('\n### Starting experiment. ###\n')
     game.play()
     print_status('\n### ### Done. ### ###\n')
+    print('Results should be saved here: results/{}.pkl'.format(filename))
