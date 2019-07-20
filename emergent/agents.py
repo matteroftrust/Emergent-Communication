@@ -175,7 +175,7 @@ class UtterancePolicy(Policy):
                 yy_categorical = to_categorical(yy, num_classes=self.vocab_size).reshape(-1, 1, self.vocab_size)
                 # self.model.train_on_batch(xx, yy)
                 for xxx, yyy in zip(inputs, yy_categorical):
-                    print('what are the shapes bitch', xxx.shape, np.array(yyy).shape, ssww.shape)
+                    print('what are the shapes', xxx.shape, np.array(yyy).shape, ssww.shape)
                     self.model.train_on_batch(xxx, np.array(yyy), sample_weight=ssww)
 
 
@@ -292,6 +292,9 @@ class Agent:
             termination = False
         else:
             termination = self.termination_policy(hidden_state, test=test)
+        # if termination:
+        #     action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
+        # TODO: if atermination == True then we dont need utterance and proposal but what about training?
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
         proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
         hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
