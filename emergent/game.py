@@ -4,7 +4,7 @@ import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad, printProgressBar
 
 
 def zscore2(arr):
@@ -244,9 +244,9 @@ class Game:
             if i % self.test_every == 0:  # TODO remember it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
-                print('Episode {}'.format(i))
+                printProgressBar(i, self.episode_num, prefix='Progress:', suffix='Complete {} / {}'.format(i, self.episode_num), length=50)
 
-            print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
+            # print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch = self.next_episode()
             # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
 

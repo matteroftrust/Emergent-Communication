@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
     batch_size = 128
     test_batch_size = 5
-    episode_num = 2000
+    episode_num = 4000
     test_every = 20
 
     item_num = 3
