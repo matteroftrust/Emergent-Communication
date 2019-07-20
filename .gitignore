@@ -4,5 +4,6 @@ __pycache__/
 /env
 /figs
 /results
+/tensorflow
 config.ini
 notebook.ipynb

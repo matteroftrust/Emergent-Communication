@@ -5,13 +5,13 @@ import numpy as np
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras import Input, regularizers, optimizers
-from keras.layers import Dense, Activation, LSTM
-from keras.layers.embeddings import Embedding
+from tensorflow.python.keras import Input, regularizers, optimizers
+from tensorflow.python.keras.layers import Dense, Activation, LSTM
+from tensorflow.python.keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
-from keras.models import Sequential, Model
+from tensorflow.python.keras.models import Sequential, Model
 # from keras.optimizers import SGD
-from keras.utils import to_categorical
+from tensorflow.python.keras.utils import to_categorical
 
 
 class NumberSequenceEncoder:

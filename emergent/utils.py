@@ -1,6 +1,6 @@
 from .settings import load_settings
 from numpy.random import random_integers, poisson
-from keras import backend as K
+from tensorflow.python.keras import backend as K
 
 import numpy as np
 
