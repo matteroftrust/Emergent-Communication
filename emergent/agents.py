@@ -5,12 +5,13 @@ import numpy as np
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
 
-from keras import Input, regularizers
+from keras import Input, regularizers, optimizers
 from keras.layers import Dense, Activation, LSTM
 from keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
 from keras.models import Sequential, Model
 # from keras.optimizers import SGD
+from keras.utils import to_categorical
 
 
 class NumberSequenceEncoder:
@@ -70,9 +71,13 @@ class TerminationPolicy(Policy):
         # Accuracy is not the right measure for your model's performance. What you are trying to do here is more of a
         # regression task than a classification task. The same can be seen from your loss function, you are using
         # 'mean_squared_error' rather than something like 'categorical_crossentropy'.
-        self.model.compile(optimizer='adam',
-                           loss='binary_crossentropy',  # TODO these are random, needs to be checked
-                           metrics=['accuracy'])
+        optimizer = optimizers.Adam()
+                                    # lr=learning_rate  0.001 by default which is fine
+
+        self.model.compile(optimizer=optimizer,
+                           loss='binary_crossentropy'  # TODO these are random, needs to be checked
+                           # metrics=['accuracy']
+                           )
         # sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True, clipvalue=0.5)  # SGD?
         # # self.model.compile(loss='categorical_crossentropy',
         # self.model.compile(loss='mean_squared_error',
@@ -127,10 +132,10 @@ class UtterancePolicy(Policy):
             dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
             model = Model(inputs=inputs, outputs=[dense])
             model.compile(optimizer='adam',
-                          loss='mse',
+                          loss='categorical_crossentropy'
                           # TODO might be cool to use the one below (requires different shape in training)
                           # loss='sparse_categorical_crossentropy',
-                          metrics=['accuracy'],
+                          # metrics=['accuracy'],
                           # sample_weight_mode="temporal"
                           )
             self.model = model
@@ -156,7 +161,8 @@ class UtterancePolicy(Policy):
                 last_symbol = utterance[-1] * np.ones((1, 1, 1))
                 arg_max = self.model.predict(last_symbol).argmax()
                 utterance.append(self.vocab[arg_max])
-            print_all('this is utterance!!', utterance)
+            utterance = np.array(utterance)
+            print_all('this is utterance!!', utterance, type(utterance))
 
         self.output_is_valid(utterance, (6,))
         return utterance
@@ -166,12 +172,11 @@ class UtterancePolicy(Policy):
             for xx, yy, ssww in zip(x, y, sample_weight):
                 inputs = [self.dummy_symbol] + yy[-1]
                 ssww = np.array([ssww])
-                for xxx, yyy in zip(inputs, yy):
-                    # print('pewnie kurwa nie dziala xysw', xx.shape, yy.shape, ssww.shape)
-                    ar = np.zeros(self.vocab_size)
-                    ar[yyy] = 1
-                    yyy = ar.reshape(1, self.vocab_size)
-                    self.model.train_on_batch(xxx, yyy, sample_weight=ssww)
+                yy_categorical = to_categorical(yy, num_classes=self.vocab_size).reshape(-1, 1, self.vocab_size)
+                # self.model.train_on_batch(xx, yy)
+                for xxx, yyy in zip(inputs, yy_categorical):
+                    print('what are the shapes', xxx.shape, np.array(yyy).shape, ssww.shape)
+                    self.model.train_on_batch(xxx, np.array(yyy), sample_weight=ssww)
 
 
 class ProposalPolicy(Policy):
@@ -186,13 +191,14 @@ class ProposalPolicy(Policy):
             self.models = []
             for _ in range(self.item_num):
                 model = Sequential([
-                    Dense(6, input_shape=(hidden_state_size,),
-                          activity_regularizer=regularizers.l1(entropy_reg)),
+                    Dense(100, input_shape=(hidden_state_size,)),
+                    Dense(6, activity_regularizer=regularizers.l1(entropy_reg)),
                     Activation('softmax')
                 ])
                 model.compile(optimizer='adam',
-                              loss='mse',  # TODO these are random, needs to be checked
-                              metrics=['accuracy'])
+                              loss='binary_crossentropy'  # TODO these are random, needs to be checked
+                              # metrics=['accuracy']
+                              )
 
                 self.models.append(model)
 
@@ -200,9 +206,11 @@ class ProposalPolicy(Policy):
     def dummy(self):
         return np.zeros(self.item_num)
 
-    def forward(self, hidden_state):
+    def forward(self, hidden_state, **kwargs):
         self.input_is_valid(hidden_state)
         if not self.is_on:
+            if 'item_pool' in kwargs:
+                return kwargs['item_pool']
             return self.dummy
         hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
@@ -273,16 +281,22 @@ class Agent:
                 self.utilities = out
                 return out
 
-    def propose(self, context, utterance, proposal, test=False):
+    def propose(self, context, utterance, proposal, termination_true=False, test=False, **kwargs):
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
         input = np.reshape(input, (1, 1500))
         hidden_state = self.core_layer(input)
         hidden_state = np.reshape(hidden_state, (100,))
 
-        termination = self.termination_policy(hidden_state, test=test)
+        if termination_true:
+            termination = False
+        else:
+            termination = self.termination_policy(hidden_state, test=test)
+        # if termination:
+        #     action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
+        # TODO: if atermination == True then we dont need utterance and proposal but what about training?
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
-        proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
+        proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
         hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)

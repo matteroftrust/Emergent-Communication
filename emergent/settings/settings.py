@@ -82,12 +82,14 @@ class GameSettings(Settings):
     Game specific settings.
     """
 
-    def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3, prosocial=False):
+    def __init__(self, filename='', batch_size=2, test_batch_size=5, episode_num=2, item_num=3, prosocial=False, test_every=50):
         self.batch_size = int(batch_size)
         self.test_batch_size = test_batch_size
         self.episode_num = int(episode_num)
         self.item_num = item_num
         self.prosocial = [True, False][prosocial in ['False', False]]
+        self.test_every = int(test_every)
+        self.filename = filename or str(dt.today()).replace(' ', '').replace(':', '').replace('.', '')
 
     def __str__(self):
         return 'Game ' + super().__str__()
