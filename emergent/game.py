@@ -310,7 +310,10 @@ class Game:
         Method for generating rewards.
         actions contains 2 actions, previous one (with proposal agents agreed on) and last one to check if action is valid.
         """
-        if actions[1].is_valid(item_pool) and actions[1].terminate:  # if proposal is valid and terminated
+        if len(actions) == 1:  # TODO this is probably wrong
+            reward_proposer = 0
+            reward_hearer = 0
+        elif actions[1].is_valid(item_pool) and actions[1].terminate:  # if proposal is valid and terminated
             reward_proposer = np.dot(proposer.utilities, item_pool - actions[0].proposal)
             reward_hearer = np.dot(hearer.utilities, actions[0].proposal)
         else:
