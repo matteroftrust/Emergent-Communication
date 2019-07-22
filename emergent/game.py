@@ -1,5 +1,5 @@
-from numpy.random import random_integers
-import numpy as np
+from cupy.random import random_integers
+import cupy as np
 import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt

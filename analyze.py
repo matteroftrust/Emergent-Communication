@@ -1,6 +1,6 @@
 import argparse
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as np
 import seaborn as sns
 
 from emergent.data_processing import load_results, compute_batch

@@ -4,7 +4,7 @@ from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
 from keras.preprocessing import sequence
 
-import numpy as np
+import cupy as np
 
 # Training = 500k episodes
 # 1 episode = 128 games

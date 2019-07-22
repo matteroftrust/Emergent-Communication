@@ -1,6 +1,6 @@
-from numpy.random import random_integers
+from cupy.random import random_integers
 import itertools
-import numpy as np
+import cupy as np
 
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
