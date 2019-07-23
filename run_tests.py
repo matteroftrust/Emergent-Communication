@@ -1,7 +1,7 @@
 import argparse
 import datetime as dt
 
-import cupy as np
+import numpy as np
 
 import emergent
 

@@ -1,7 +1,7 @@
 import pickle as pkl
 import itertools
 import matplotlib.pyplot as plt
-import cupy as np
+import numpy as np
 import seaborn as sns
 
 from emergent.game import HiddenState

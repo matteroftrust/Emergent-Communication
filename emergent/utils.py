@@ -1,8 +1,8 @@
 from .settings import load_settings
-from cupy.random import random_integers, poisson
+from numpy.random import random_integers, poisson
 from tensorflow.python.keras import backend as K
 
-import cupy as np
+import numpy as np
 
 project_settings, _, _ = load_settings()
 
