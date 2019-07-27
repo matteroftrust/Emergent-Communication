@@ -296,14 +296,14 @@ class Game:
             hidden_states.append(hidden_state)
             # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
 
-            if action.terminate or not action.is_valid(item_pool):  # that is a bit weird but should work.
-                # print_status('i guest thats where it stops', t, n, 'term', action.terminate, 'valid', action.is_valid(item_pool))
-                # n = t + 1
-                break  # if terminate then negotiations are over
+            if not action.is_valid(item_pool):
+                break
 
-        rewards = self.compute_rewards(item_pool, negotiations[-2:], proposer, hearer)
-        # print_status('negotiations finished.\nagent {} reward {}\nagent {} reward {}'.format(proposer.id, rewards[0], hearer.id, rewards[1]))
-        return item_pool, negotiations, rewards, n, hidden_states
+            if action.terminate:  # so its valid and terminated
+                rewards = self.compute_rewards(item_pool, negotiations[-2:], proposer, hearer)
+                return item_pool, negotiations, rewards, n, hidden_states
+    
+        return item_pool, negotiations, [0, 0], n, hidden_states
 
     def compute_rewards(self, item_pool, actions, proposer, hearer):
         """
@@ -313,7 +313,7 @@ class Game:
         if len(actions) == 1:  # TODO this is probably wrong
             reward_proposer = 0
             reward_hearer = 0
-        elif actions[1].is_valid(item_pool) and actions[1].terminate:  # if proposal is valid and terminated
+        elif actions[1].terminate:  # if proposal is valid and terminated
             reward_proposer = np.dot(proposer.utilities, item_pool - actions[0].proposal)
             reward_hearer = np.dot(hearer.utilities, actions[0].proposal)
         else:
