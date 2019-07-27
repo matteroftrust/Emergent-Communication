@@ -300,27 +300,13 @@ class Game:
                 break
 
             if action.terminate:  # so its valid and terminated
-                rewards = self.compute_rewards(item_pool, negotiations[-2:], proposer, hearer)
-                return item_pool, negotiations, rewards, n, hidden_states
-    
+                reward_proposer = np.dot(proposer.utilities, item_pool - negotiations[-2].proposal)
+                reward_hearer = np.dot(hearer.utilities, negotiations[-2].proposal)
+
+                return item_pool, negotiations, [reward_proposer, reward_hearer], n, hidden_states
+
         return item_pool, negotiations, [0, 0], n, hidden_states
 
-    def compute_rewards(self, item_pool, actions, proposer, hearer):
-        """
-        Method for generating rewards.
-        actions contains 2 actions, previous one (with proposal agents agreed on) and last one to check if action is valid.
-        """
-        if len(actions) == 1:  # TODO this is probably wrong
-            reward_proposer = 0
-            reward_hearer = 0
-        elif actions[1].terminate:  # if proposal is valid and terminated
-            reward_proposer = np.dot(proposer.utilities, item_pool - actions[0].proposal)
-            reward_hearer = np.dot(hearer.utilities, actions[0].proposal)
-        else:
-            reward_proposer = 0
-            reward_hearer = 0
-        # print_status('what are the rewards?', reward_proposer, reward_hearer)
-        return [reward_proposer, reward_hearer]
 
     def tests(self):
         """
