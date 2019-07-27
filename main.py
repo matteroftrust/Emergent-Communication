@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch_size', dest='batch_size', type=int)
     parser.add_argument('-t', '--test_batch_size', dest='test_batch_size', type=int)
     parser.add_argument('-e', '--episode_num', dest='episode_num', type=int)
-    parser.add_argument('--acceleration', dest='acceleration')
+    parser.add_argument('-a', '--acceleration', dest='acceleration')
     parser.add_argument('-c', '--channels', dest='channels')
     parser.add_argument('--prosocial', dest='prosocial')
     parser.add_argument('-te', '--test_every', dest='test_every', type=int)

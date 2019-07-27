@@ -1,11 +1,15 @@
-from numpy.random import random_integers
-import numpy as np
 import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad, printProgressBar
 
+try:
+    import cupy as np
+    print('cupy imported')
+except ImportError:
+    import numpy as np
+    print('cupy not imported. numpy importead instead.')
 
 def zscore2(arr):
     zscored = zscore(arr)

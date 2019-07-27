@@ -1,6 +1,4 @@
-from numpy.random import random_integers
 import itertools
-import numpy as np
 
 from .game import Action
 from .utils import print_all, print_status, validation, convert_to_sparse
@@ -12,6 +10,13 @@ from tensorflow.python.keras.layers.embeddings import Embedding
 from tensorflow.python.keras.models import Sequential, Model
 # from keras.optimizers import SGD
 from tensorflow.python.keras.utils import to_categorical
+
+try:
+    import cupy as np
+    print('cupy imported')
+except ImportError:
+    import numpy as np
+    print('cupy not imported. numpy importead instead.')
 
 
 class NumberSequenceEncoder:
@@ -276,7 +281,7 @@ class Agent:
         Generate utility function which specifies rewards for each item.
         """
         while True:
-            out = random_integers(0, 10, 3)
+            out = np.random.random_integers(0, 10, 3)
             if list(out) != [0, 0, 0]:
                 self.utilities = out
                 return out

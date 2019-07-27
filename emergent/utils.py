@@ -1,8 +1,12 @@
 from .settings import load_settings
-from numpy.random import random_integers, poisson
 from tensorflow.python.keras import backend as K
 
-import numpy as np
+try:
+    import cupy as np
+    print('cupy imported')
+except ImportError:
+    import numpy as np
+    print('cupy not imported. numpy importead instead.')
 
 project_settings, _, _ = load_settings()
 
@@ -18,7 +22,7 @@ class Results:
 
 
 def generate_item_pool():
-    return random_integers(0, 5, 3)
+    return np.random.random_integers(0, 5, 3)
 
 
 def generate_negotiation_time():
@@ -27,7 +31,7 @@ def generate_negotiation_time():
     TODO it should be truncated Poisson but this one is not I guess! Needs to be checked!
     """
     while True:
-        out = poisson(7, 1)
+        out = np.random.poisson(7, 1)
         if out >= 4 and out <= 10:
             return int(out)
 
