@@ -307,7 +307,6 @@ class Game:
 
         return item_pool, negotiations, [0, 0], n, hidden_states
 
-
     def tests(self):
         """
         Runs 5 test batches without training.
