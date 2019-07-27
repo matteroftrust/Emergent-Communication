@@ -5,16 +5,23 @@ from datetime import datetime as dt
 from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad, printProgressBar
 
 
-def __init__(cupy=False):
-    if cupy:
-        try:
-            import cupy as np
-            print('cupy imported')
-        except ImportError:
-            import numpy as np
-            print('cupy not imported. numpy importead instead.')
-    else:
-        import numpy as np
+# def __init__(cupy=False):
+#     if cupy:
+#         try:
+#             import cupy as np
+#             print('cupy imported')
+#         except ImportError:
+#             import numpy as np
+#             print('cupy not imported. numpy importead instead.')
+#     else:
+#         import numpy as np
+
+try:
+    import cupy as np
+    print('cupy imported')
+except ImportError:
+    import numpy as np
+    print('cupy not imported. numpy importead instead.')
 
 
 def zscore2(arr):
