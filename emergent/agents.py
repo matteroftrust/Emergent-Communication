@@ -1,7 +1,7 @@
 import itertools
 
 from .game import Action
-from .utils import print_all, print_status, validation, convert_to_sparse
+from .utils import print_all, print_status, validation, convert_to_sparse, uncupynize
 
 from tensorflow.python.keras import Input, regularizers, optimizers
 from tensorflow.python.keras.layers import Dense, Activation, LSTM
@@ -40,8 +40,9 @@ class NumberSequenceEncoder:
     def __call__(self, input):
         return self.encode(input)
 
+    @uncupynize(input_keys=['input'])
     def encode(self, input):
-        return self.model.predict(asnumpy(input))
+        return self.model.predict(input)
 
 
 class Policy:
@@ -296,6 +297,7 @@ class Agent:
 
     def propose(self, context, utterance, proposal, termination_true=False, test=False, **kwargs):
         h_c, h_m, h_p = self.context_encoder(context), self.utterance_encoder(utterance), self.context_encoder(proposal)
+        print(type(h_c), type(h_m), type(h_p))
         input = np.concatenate([h_c, h_m, h_p])
         input = np.reshape(input, (1, 1500))
         hidden_state = self.core_layer(input)

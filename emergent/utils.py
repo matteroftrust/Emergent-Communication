@@ -1,5 +1,13 @@
 from .settings import load_settings
 from tensorflow.python.keras import backend as K
+import numpy
+
+try:
+    import cupy
+    imported_cupy = True
+except ImportError:
+    imported_cupy = False
+
 
 try:
     import cupy as np
@@ -56,6 +64,20 @@ def validation(func):
             if not is_valid:
                 print('###### Validation failed ######\n' + msg)
     return function_wrapper
+
+
+def uncupynize(input_keys, output=None, is_cupy=imported_cupy):
+
+    def uncupynize_validator(func):
+        def function_wrapper(*args, **kwargs):
+            if not is_cupy:
+                return func(*args, **kwargs)
+            for key in input_keys:
+                kwargs[key] = numpy.array(kwargs[key])
+                out = func(*args, **kwargs)
+                return cupy.array(out)
+        return function_wrapper
+    return uncupynize_validator
 
 
 def discount(r, gamma=0.99, standardize=False):
