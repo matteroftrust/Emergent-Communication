@@ -38,7 +38,7 @@ class NumberSequenceEncoder:
         ])
 
     def __call__(self, input):
-        return self.encode(input)
+        return self.encode(input=input)
 
     @uncupynize(input_keys=['input'])
     def encode(self, input):
