@@ -14,9 +14,15 @@ from tensorflow.python.keras.utils import to_categorical
 try:
     import cupy as np
     print('cupy imported')
+
+    def asnumpy(arr):
+        return np.asnumpy(arr)
 except ImportError:
     import numpy as np
     print('cupy not imported. numpy importead instead.')
+
+    def asnumpy(arr):
+        return arr
 
 # import numpy as np
 
@@ -35,7 +41,7 @@ class NumberSequenceEncoder:
         return self.encode(input)
 
     def encode(self, input):
-        return self.model.predict(input)
+        return self.model.predict(asnumpy(input))
 
 
 class Policy:
