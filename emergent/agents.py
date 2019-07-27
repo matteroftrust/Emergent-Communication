@@ -11,12 +11,14 @@ from tensorflow.python.keras.models import Sequential, Model
 # from keras.optimizers import SGD
 from tensorflow.python.keras.utils import to_categorical
 
-try:
-    import cupy as np
-    print('cupy imported')
-except ImportError:
-    import numpy as np
-    print('cupy not imported. numpy importead instead.')
+# try:
+#     import cupy as np
+#     print('cupy imported')
+# except ImportError:
+#     import numpy as np
+#     print('cupy not imported. numpy importead instead.')
+
+import numpy as np
 
 
 class NumberSequenceEncoder:
