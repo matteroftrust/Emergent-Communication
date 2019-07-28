@@ -54,6 +54,11 @@ def compute_batch(batch):
     except:
         numpize(batch)
 
+    # print('rewards', batch.rewards)
+    # print('item_pool', batch.item_pools)
+    batch.rewards_0 = batch.rewards[0]
+    batch.rewards_1 = batch.rewards[1]
+
     batch.item_pools = batch.item_pools.reshape(-1, 3)
     batch.rewards_0 = batch.rewards_0.reshape(-1)
     batch.rewards_1 = batch.rewards_1.reshape(-1)
@@ -69,5 +74,9 @@ def compute_batch(batch):
     is_nan_1 = np.isnan(batch.st_rewards_1)
     batch.st_rewards_0[is_nan_0] = 0
     batch.st_rewards_1[is_nan_1] = 0
+    print(batch.st_rewards_1)
+    print('mean??', np.mean(batch.st_rewards_1))
     batch.mean_st_reward_0 = np.mean(batch.st_rewards_0)
     batch.mean_st_reward_1 = np.mean(batch.st_rewards_1)
+
+    print(batch.mean_st_reward_1)

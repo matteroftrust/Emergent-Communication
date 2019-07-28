@@ -21,14 +21,17 @@ if __name__ == '__main__':
 
     batch_size = 128
     test_batch_size = 5
-    episode_num = 20000
+    episode_num = 1000
     test_every = 50
 
     item_num = 3
     prosocial = False
     save_as = 'static_test'
 
-    agent_settings = emergent.settings.AgentSettings()
+    proposal_channel = False
+    linguistic_channel = False
+
+    agent_settings = emergent.settings.AgentSettings(proposal_channel=proposal_channel, linguistic_channel=linguistic_channel)
 
     print('Agents initialization')
 

@@ -4,7 +4,7 @@ import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discount, flatten, unpack, get_weight_grad, printProgressBar
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, unpack, get_weight_grad, printProgressBar
 
 
 def zscore2(arr):
@@ -61,8 +61,9 @@ class StateBatch:
         self.trajectories_0 = []
         self.trajectories_1 = []
         self.item_pools = []
-        self.rewards_0 = []
-        self.rewards_1 = []
+        self.rewards = [[], []]
+        # self.rewards_0 = []
+        # self.rewards_1 = []
         self.hidden_states_0 = []
         self.hidden_states_1 = []
         self.ns = []
@@ -97,8 +98,10 @@ class StateBatch:
             self.hidden_states_0.append(hidden_states_even)
             self.hidden_states_1.append(hidden_states_odd)
 
-        self.rewards_0.append(rewards[not is_first_0])
-        self.rewards_1.append(rewards[is_first_0])
+        # self.rewards_0.append(rewards[not is_first_0])
+        # self.rewards_1.append(rewards[is_first_0])
+        self.rewards[0].append(rewards[not is_first_0])
+        self.rewards[1].append(rewards[is_first_0])
 
         self.item_pools.append(item_pool)
         self.ns.append(n)  # do we even need this now? maybe for regularization later?
@@ -110,8 +113,10 @@ class StateBatch:
         self.trajectories_0.append(batch.trajectories_0)
         self.trajectories_1.append(batch.trajectories_1)
         self.item_pools.append(batch.item_pools)
-        self.rewards_0.append(batch.rewards_0)
-        self.rewards_1.append(batch.rewards_1)
+        self.rewards[0].append(batch.rewards[0])
+        self.rewards[1].append(batch.rewards[1])
+        # self.rewards_0.append(batch.rewards_0)
+        # self.rewards_1.append(batch.rewards_1)
         self.ns.append(batch.ns)
         self.utilities_0.append(batch.utilities_0)
         self.utilities_1.append(batch.utilities_1)
@@ -121,58 +126,47 @@ class StateBatch:
         for key in keys:
             self.__dict__[key] = np.array(self.__dict__[key])
 
-    @classmethod
-    def compute_discounted_rewards(self, trajectory, reward, discount_factor=0.99):
-
-        input = np.ones(len(trajectory), reward) * reward
-        return discount(input, discount_factor), trajectory
-
     def save_log(self):
         pass
 
     def convert_for_training(self, baseline, prosocial):
         # TODO: this whole code needs a person equipped with a brain
+        rewards = self.rewards.copy()
         rewards_0 = []
         rewards_1 = []
 
-        self.rewards = [self.rewards_0, self.rewards_1]
+        # self.rewards = [self.rewards_0, self.rewards_1]
         # print('rewardss before\n', self.rewards)
 
         # subtract baseline
         baseline = .7 * baseline + .3 * np.mean(self.rewards, 1)
 
         if prosocial:
-            self.rewards[0] = self.rewards[0] - baseline[0]
-            if not all(reward == 0 for reward in self.rewards[0]):
-                self.rewards[0] = zscore2(self.rewards[0])
+            rewards[0] = rewards[0] - baseline[0]
+            if not all(reward == 0 for reward in rewards[0]):
+                rewards[0] = zscore2(rewards)
 
         else:
-            self.rewards[0] = self.rewards[0] - baseline[0]
-            self.rewards[1] = self.rewards[1] - baseline[0]
+            rewards[0] = rewards[0] - baseline[0]
+            rewards[1] = rewards[1] - baseline[0]
 
             # standardize rewards
-            if not all(reward == 0 for reward in self.rewards[0]):
-                self.rewards[0] = zscore2(self.rewards[0])
-            if not all(reward == 0 for reward in self.rewards[1]):
-                self.rewards[1] = zscore2(self.rewards[1])
+            if not all(reward == 0 for reward in rewards[0]):
+                rewards[0] = zscore2(rewards[0])
+            if not all(reward == 0 for reward in rewards[1]):
+                rewards[1] = zscore2(rewards[1])
 
         for i in range(len(self.ns)):
 
             if prosocial:
-                reward_0 = self.rewards[0][i]
-                reward_1 = self.rewards[0][i]
+                reward_0 = rewards[0][i]
+                reward_1 = rewards[0][i]
             else:
-                reward_0 = self.rewards[0][i]
-                reward_1 = self.rewards[1][i]
+                reward_0 = rewards[0][i]
+                reward_1 = rewards[1][i]
 
-            t_0_len = len(self.trajectories_0[i])
-            t_1_len = len(self.trajectories_1[i])
-
-            input_0 = np.ones(t_0_len) * reward_0
-            input_1 = np.ones(t_1_len) * reward_1
-
-            trajectory_rewards_0 = discount(input_0)
-            trajectory_rewards_1 = discount(input_1)
+            trajectory_rewards_0 = discounts(reward_0, len(self.trajectories_0[i]))
+            trajectory_rewards_1 = discounts(reward_1, len(self.trajectories_1[i]))
 
             rewards_0.append(trajectory_rewards_0)
             rewards_1.append(trajectory_rewards_1)

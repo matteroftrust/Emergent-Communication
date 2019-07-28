@@ -66,6 +66,10 @@ def discount(r, gamma=0.99, standardize=False):
     return discounted
 
 
+def discounts(r, length, gamma=0.99):
+    return [r * (gamma ** i) for i in range(length)]
+
+
 def flatten(arr):
     return np.array([elem for sublist in arr for elem in sublist])
 

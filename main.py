@@ -93,6 +93,8 @@ if __name__ == '__main__':
     game = emergent.Game(agents=agents, **game_settings.as_dict())
 
     print_status('\n### Starting experiment. ###\n')
+    # import cProfile
+    # cProfile.run('game.play()')
     game.play()
     print_status('\n### ### Done. ### ###\n')
     print('Results should be saved here: results/{}.pkl'.format(filename))
