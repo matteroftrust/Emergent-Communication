@@ -30,7 +30,7 @@ if __name__ == '__main__':
     print('rewards111', rewards_1)
     X = np.linspace(1, len(rewards_0), len(rewards_0))
     plt.figure(figsize=(15, 10))
-    plt.axes().set_ylim((0, 1))
+    plt.axes().set_ylim((-0.2, 1.2))
     plt.legend(['Agent 0', 'Agent 1'])
     plt.xlabel('test iterations')
     plt.ylabel('relative reward')

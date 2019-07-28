@@ -22,10 +22,7 @@ def run_analysis(filename):
 
     for state_batch in data:
         state_batch = state_batch[1]
-        # sb_rewards_0 = list(itertools.chain(*state_batch.rewards_0))
-        # sb_rewards_1 = list(itertools.chain(*state_batch.rewards_1))
-        # mean_rewards_0 = np.mean(sb_rewards_0)
-        # mean_rewards_1 = np.mean(sb_rewards_1)
+
         compute_batch(state_batch)
 
         rewards_0.append(state_batch.mean_st_reward_0)
@@ -54,8 +51,6 @@ def compute_batch(batch):
     except:
         numpize(batch)
 
-    # print('rewards', batch.rewards)
-    # print('item_pool', batch.item_pools)
     batch.rewards_0 = batch.rewards[0]
     batch.rewards_1 = batch.rewards[1]
 
@@ -74,8 +69,6 @@ def compute_batch(batch):
     is_nan_1 = np.isnan(batch.st_rewards_1)
     batch.st_rewards_0[is_nan_0] = 0
     batch.st_rewards_1[is_nan_1] = 0
-    print(batch.st_rewards_1)
-    print('mean??', np.mean(batch.st_rewards_1))
     batch.mean_st_reward_0 = np.mean(batch.st_rewards_0)
     batch.mean_st_reward_1 = np.mean(batch.st_rewards_1)
 

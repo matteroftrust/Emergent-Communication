@@ -19,9 +19,9 @@ if __name__ == '__main__':
     prop_response = np.array([0, 0, 0])
     utter_response = np.array([0] * 11)
 
-    batch_size = 128
-    test_batch_size = 5
-    episode_num = 1000
+    batch_size = 60
+    test_batch_size = 2
+    episode_num = 200
     test_every = 50
 
     item_num = 3

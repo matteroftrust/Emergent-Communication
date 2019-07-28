@@ -73,11 +73,11 @@ class StateBatch:
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, utilities, max_trajectory_len=10):
 
         hidden_states = [HiddenState(hs) for hs in hidden_states]
-        trajectory_odd = trajectory[::2]
-        trajectory_even = trajectory[:1][::2]
+        trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
+        trajectory_odd = trajectory[:1][::2]
 
-        hidden_states_odd = hidden_states[::2]
-        hidden_states_even = hidden_states[:1][::2]
+        hidden_states_even = hidden_states[::2]
+        hidden_states_odd = hidden_states[:1][::2]
 
         hidden_states_odd.reverse()
         hidden_states_even.reverse()
@@ -87,21 +87,21 @@ class StateBatch:
         is_first_0 = trajectory[0].proposed_by == 0
 
         if is_first_0:  # agent 0 gets odd
-            self.trajectories_0.append(trajectory_odd)
-            self.trajectories_1.append(trajectory_even)
-            self.hidden_states_0.append(hidden_states_odd)
-            self.hidden_states_1.append(hidden_states_even)
-
-        else:  # == 1  agent - gets even
             self.trajectories_0.append(trajectory_even)
             self.trajectories_1.append(trajectory_odd)
             self.hidden_states_0.append(hidden_states_even)
             self.hidden_states_1.append(hidden_states_odd)
 
+        else:  # == 1  agent - gets even
+            self.trajectories_0.append(trajectory_odd)
+            self.trajectories_1.append(trajectory_even)
+            self.hidden_states_0.append(hidden_states_odd)
+            self.hidden_states_1.append(hidden_states_even)
+
         # self.rewards_0.append(rewards[not is_first_0])
         # self.rewards_1.append(rewards[is_first_0])
-        self.rewards[0].append(rewards[not is_first_0])
-        self.rewards[1].append(rewards[is_first_0])
+        self.rewards[0].append(rewards[0])  # no need to check because its a dict
+        self.rewards[1].append(rewards[1])
 
         self.item_pools.append(item_pool)
         self.ns.append(n)  # do we even need this now? maybe for regularization later?
@@ -296,10 +296,11 @@ class Game:
             if action.terminate:  # so its valid and terminated
                 reward_proposer = np.dot(proposer.utilities, item_pool - negotiations[-2].proposal)
                 reward_hearer = np.dot(hearer.utilities, negotiations[-2].proposal)
+                rewards = {proposer.id: reward_proposer, hearer.id: reward_hearer}
 
-                return item_pool, negotiations, [reward_proposer, reward_hearer], n, hidden_states
+                return item_pool, negotiations, rewards, n, hidden_states
 
-        return item_pool, negotiations, [0, 0], n, hidden_states
+        return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states
 
     def tests(self):
         """
