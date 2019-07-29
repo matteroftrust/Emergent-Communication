@@ -11,7 +11,7 @@ def save_config(project_settings, agent_settings, game_settings, filename, extra
         'project settings': project_settings.as_dict(),
         'agent settings': agent_settings.as_dict()
     }
-    with open('{}_config.txt'.format(filename), 'w') as file:
+    with open('results/{}_config.txt'.format(filename), 'w') as file:
         file.write(json.dumps(for_serialization, sort_keys=True, indent=4))
 
 
