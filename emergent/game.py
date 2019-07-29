@@ -1,17 +1,9 @@
 from numpy.random import random_integers
 import numpy as np
 import pickle as pkl
-from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, get_weight_grad, printProgressBar
-
-
-def zscore2(arr):
-    zscored = zscore(arr)
-    if np.isnan(zscored).any():
-        return arr
-    return zscored
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, zscore2, printProgressBar
 
 
 class Action:

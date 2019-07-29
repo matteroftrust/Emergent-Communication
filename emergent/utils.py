@@ -3,6 +3,8 @@ from numpy.random import random_integers, poisson
 from tensorflow.python.keras import backend as K
 
 import numpy as np
+from scipy.stats import zscore
+
 
 project_settings, _, _ = load_settings()
 
@@ -72,6 +74,13 @@ def discounts(r, length, gamma=0.99):
 
 def flatten(arr):
     return np.array([elem for sublist in arr for elem in sublist])
+
+
+def zscore2(arr):
+    zscored = zscore(arr)
+    if np.isnan(zscored).any():
+        return arr
+    return zscored
 
 
 def print_trajectory(t, name):
