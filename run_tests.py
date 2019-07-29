@@ -21,8 +21,8 @@ if __name__ == '__main__':
 
     batch_size = 128
     test_batch_size = 5
-    episode_num = 1000
-    test_every = 20
+    episode_num = 5000
+    test_every = 100
 
     item_num = 3
     prosocial = False
@@ -43,3 +43,5 @@ if __name__ == '__main__':
     game = emergent.game.Game(agents=agents, batch_size=batch_size, test_batch_size=test_batch_size, episode_num=episode_num,
                               item_num=item_num, prosocial=prosocial, test_every=test_every, filename=filename)
     game.play(save_as=save_as)
+
+    print('saved as {}'.format(save_as))

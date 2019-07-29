@@ -163,7 +163,7 @@ class UtterancePolicy(Policy):
                 utterance.append(self.vocab[arg_max])
             utterance = np.array(utterance)
 
-        self.output_is_valid(utterance, (6,))
+        # self.output_is_valid(utterance, (6,))
         return utterance
 
     def train(self, x, y, sample_weight):
@@ -237,8 +237,8 @@ class ProposalPolicy(Policy):
     def forward(self, hidden_state, **kwargs):
         # self.input_is_valid(hidden_state)
         if not self.is_on:
-            if 'item_pool' in kwargs:
-                return kwargs['item_pool']
+            # if 'item_pool' in kwargs:
+            #     return kwargs['item_pool']
             return self.dummy
         hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []

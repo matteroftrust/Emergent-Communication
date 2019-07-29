@@ -178,7 +178,6 @@ class StateBatch:
         x_0 = flatten(self.hidden_states_0)
         x_1 = flatten(self.hidden_states_1)
 
-        print_all('This goes to reinfoce:')
         # print('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
@@ -257,7 +256,7 @@ class Game:
         action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         # rand_0_or_1 = random_integers(0, 1)
-        rand_0_or_1 = 1
+        rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
         negotiations = []
