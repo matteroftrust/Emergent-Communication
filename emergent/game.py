@@ -4,7 +4,7 @@ import pickle as pkl
 from scipy.stats import zscore
 from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, unpack, get_weight_grad, printProgressBar
+from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, get_weight_grad, printProgressBar
 
 
 def zscore2(arr):
@@ -32,16 +32,6 @@ class Action:
 
     def is_valid(self, item_pool):
         return not (self.proposal > item_pool).any()
-
-
-class HiddenState:
-    def __init__(self, array):
-        self.hs = np.array(array)
-        if self.hs.shape != (100,):
-            raise ValueError('Hidden state dimensions are wrong. Received: {} with shape {}'.format(type(array), np.array(array).shape))
-
-    def __repr__(self):
-        return 'hidden_state'
 
 
 class StateBatch:
@@ -72,12 +62,11 @@ class StateBatch:
 
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, utilities, max_trajectory_len=10):
 
-        hidden_states = [HiddenState(hs) for hs in hidden_states]
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
-        trajectory_odd = trajectory[:1][::2]
+        trajectory_odd = trajectory[1:][::2]
 
         hidden_states_even = hidden_states[::2]
-        hidden_states_odd = hidden_states[:1][::2]
+        hidden_states_odd = hidden_states[1:][::2]
 
         hidden_states_odd.reverse()
         hidden_states_even.reverse()
@@ -189,12 +178,9 @@ class StateBatch:
         x_0 = flatten(self.hidden_states_0)
         x_1 = flatten(self.hidden_states_1)
 
-        x_0 = unpack(x_0)
-        x_1 = unpack(x_1)
-
         print_all('This goes to reinfoce:')
-        print_all('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
-        print_all('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
+        # print('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
+        # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
         # print('rewardss after\n', rewards)
@@ -271,7 +257,7 @@ class Game:
         action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         # rand_0_or_1 = random_integers(0, 1)
-        rand_0_or_1 = 0
+        rand_0_or_1 = 1
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
         negotiations = []
@@ -323,20 +309,8 @@ class Game:
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
 
-        # standardize rewards
-        if self.prosocial:
-            # TODO
-            pass
-        else:
-            rewards[0] = zscore2(rewards[0])
-            rewards[1] = zscore2(rewards[1])
-        # print('all that she wants:\n----------------------------------------------\n')
-        # msgs = ['x_0', 'x_1', 'y_termination_0', 'y_termination_1', 'y_proposal_0', 'y_proposal_1', 'rewards_0', 'rewards_1']
-        # ars = [x_0[:10], x_1[:10], y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, rewards[0], rewards[1]]
-        # for msg, ar in zip(msgs, ars):
-        #     print(msg, ar)
-        # print('----------------------------------------')
-        # print('gradient', get_weight_grad(agent_0.termination_policy.model, x_0, y_termination_0))
+        # print('what goes to train000 ', x_0.shape, y_termination_0.shape)
+        # print('what goes to train111 ', x_1.shape, y_termination_1.shape)
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 

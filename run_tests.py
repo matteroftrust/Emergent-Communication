@@ -15,20 +15,20 @@ if __name__ == '__main__':
     args = parser.parse_args()
     filename = args.__dict__['filename']
 
-    term_response = False
+    term_response = True
     prop_response = np.array([0, 0, 0])
     utter_response = np.array([0] * 11)
 
     batch_size = 128
     test_batch_size = 5
-    episode_num = 2000
-    test_every = 50
+    episode_num = 1000
+    test_every = 20
 
     item_num = 3
     prosocial = False
     save_as = 'static_test'
 
-    proposal_channel = False
+    proposal_channel = True
     linguistic_channel = False
 
     agent_settings = emergent.settings.AgentSettings(proposal_channel=proposal_channel, linguistic_channel=linguistic_channel)

@@ -74,16 +74,6 @@ def flatten(arr):
     return np.array([elem for sublist in arr for elem in sublist])
 
 
-def unpack(arr):
-    """
-    unpack values stored in HiddenState.
-    """
-    new_arr = []
-    for hs in arr:
-        new_arr.append(hs.hs)
-    return np.array(new_arr)
-
-
 def print_trajectory(t, name):
     print('\n{}\n'.format(name))
     for elem in t:

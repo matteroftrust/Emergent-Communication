@@ -135,7 +135,7 @@ class UtterancePolicy(Policy):
                           loss='categorical_crossentropy'
                           # TODO might be cool to use the one below (requires different shape in training)
                           # loss='sparse_categorical_crossentropy',
-                          # metrics=['accuracy'],
+                          # metrics=['categorical_accuracy']
                           # sample_weight_mode="temporal"
                           )
             self.model = model
@@ -158,25 +158,53 @@ class UtterancePolicy(Policy):
                 self.model.layers[1].states[0] = hidden_state
             utterance = [self.vocab[self.model.predict(self.dummy_symbol).argmax()]]
             for i in range(self.utterance_len - 1):
-                last_symbol = utterance[-1] * np.ones((1, 1, 1))
+                last_symbol = np.full((1, 1, 1), utterance[-1])
                 arg_max = self.model.predict(last_symbol).argmax()
                 utterance.append(self.vocab[arg_max])
             utterance = np.array(utterance)
-            print_all('this is utterance!!', utterance, type(utterance))
 
         self.output_is_valid(utterance, (6,))
         return utterance
 
     def train(self, x, y, sample_weight):
+        # TODO: why it doesnt work on a batch?!?!!!
+        # TODO: x can be skipped, right?
         if self.is_on:
+            # X = []
+            # Y = []
+            # SW = []
             for xx, yy, ssww in zip(x, y, sample_weight):
                 inputs = [self.dummy_symbol] + yy[-1]
                 ssww = np.array([ssww])
                 yy_categorical = to_categorical(yy, num_classes=self.vocab_size).reshape(-1, 1, self.vocab_size)
                 # self.model.train_on_batch(xx, yy)
+
                 for xxx, yyy in zip(inputs, yy_categorical):
-                    print('what are the shapes', xxx.shape, np.array(yyy).shape, ssww.shape)
+                    # X.append(xxx)
+                    # Y.append(yyy)
+                    # SW.append(ssww)
+                    # X.append(xxx)
+                    # Y.append(yyy)
+                    # SW.append(ssww)
+                    # print('shapesss', xxx.shape, np.array(yyy).shape, ssww.shape)
                     self.model.train_on_batch(xxx, np.array(yyy), sample_weight=ssww)
+            # X = np.array(X)
+            # Y = np.array(Y)
+            # SW = np.array(SW)
+            #
+            # X = X.reshape(-1, 1, 1)
+            # Y = Y.reshape(-1, 11)
+            # SW = SW.reshape(-1)
+
+            # X = np.array(X).reshape(-1, 1, 1)
+            # Y = np.array(Y).reshape(-1, 11)
+            # SW = np.array(SW).reshape(-1)
+            # print('what are the shapes? X {}, Y {}, SW {}'.format(X.shape, Y.shape, SW.shape))
+            # print('x', X[1])
+            # print('y', Y[1])
+            # print('sw', SW[1])
+            # self.model.train_on_batch(X, Y, sample_weight=SW)
+            # self.model.train_on_batch(X, Y, sample_weight=SW)
 
 
 class ProposalPolicy(Policy):
@@ -207,7 +235,7 @@ class ProposalPolicy(Policy):
         return np.zeros(self.item_num)
 
     def forward(self, hidden_state, **kwargs):
-        self.input_is_valid(hidden_state)
+        # self.input_is_valid(hidden_state)
         if not self.is_on:
             if 'item_pool' in kwargs:
                 return kwargs['item_pool']
@@ -219,7 +247,7 @@ class ProposalPolicy(Policy):
             single_proposal = np.random.choice(np.arange(6), p=distribution)
             proposal.append(single_proposal)
         out = np.array(proposal)
-        self.output_is_valid(out, (3,))
+        # self.output_is_valid(out, (3,))
         return out
 
     def train(self, x, y, sample_weight):

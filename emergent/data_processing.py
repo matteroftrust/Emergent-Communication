@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from emergent.game import HiddenState
-
 sns.set(style="darkgrid")
 
 
@@ -71,5 +69,3 @@ def compute_batch(batch):
     batch.st_rewards_1[is_nan_1] = 0
     batch.mean_st_reward_0 = np.mean(batch.st_rewards_0)
     batch.mean_st_reward_1 = np.mean(batch.st_rewards_1)
-
-    print(batch.mean_st_reward_1)
