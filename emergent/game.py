@@ -259,17 +259,15 @@ class Game:
         rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
+        proposer_context = np.concatenate((item_pool, proposer.utilities))  # context doesnt change during negotiation so can be outside of the loop
+        hearer_context = np.concatenate((item_pool, hearer.utilities))
         negotiations = []
         hidden_states = []
         # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
-
+        termination_true = True
         for t in range(n):
-            proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
 
-            termination_true = t == 0
-
-            context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state = proposer.propose(context, action.utterance, action.proposal, termination_true=termination_true,
+            action, hidden_state = proposer.propose(hearer_context, action.utterance, action.proposal, termination_true=termination_true,
                                                     test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
@@ -284,6 +282,10 @@ class Game:
                 rewards = {proposer.id: reward_proposer, hearer.id: reward_hearer}
 
                 return item_pool, negotiations, rewards, n, hidden_states
+
+            proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
+            proposer_context, hearer_context = hearer_context, proposer_context
+            termination_true = False
 
         return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states
 

@@ -21,8 +21,8 @@ if __name__ == '__main__':
 
     batch_size = 128
     test_batch_size = 5
-    episode_num = 5000
-    test_every = 100
+    episode_num = 1000
+    test_every = 50
 
     item_num = 3
     prosocial = False
