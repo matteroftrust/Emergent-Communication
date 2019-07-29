@@ -1,5 +1,18 @@
 from configparser import SafeConfigParser
 from datetime import datetime as dt
+import json
+
+
+def save_config(project_settings, agent_settings, game_settings, filename, extra=None):
+
+    for_serialization = {
+        'extra': extra,
+        'game settings': game_settings.as_dict(),
+        'project settings': project_settings.as_dict(),
+        'agent settings': agent_settings.as_dict()
+    }
+    with open('{}_config.txt'.format(filename), 'w') as file:
+        file.write(json.dumps(for_serialization, sort_keys=True, indent=4))
 
 
 def load_settings(config_file='config.ini'):
@@ -39,7 +52,6 @@ class ProjectSettings(Settings):
         else:
             now = dt.now()
             self.experiment_name = '{}_experiment'.format(str(now))
-        print('experiment nameee', self.experiment_name)
 
     def __str__(self):
         return 'Project ' + super().__str__()

@@ -87,7 +87,7 @@ if __name__ == '__main__':
     print_all('agents summary')
     for agent in agents:
         print('\nsummary {}'.format(agent.id))
-        print(agent.core_layer_model.summary())
+        print(agent.core_layer.model.summary())
 
     print_status('\n### Game initialization. ###\n')
     game = emergent.Game(agents=agents, **game_settings.as_dict())
@@ -97,4 +97,5 @@ if __name__ == '__main__':
     # cProfile.run('game.play()')
     game.play()
     print_status('\n### ### Done. ### ###\n')
+    emergent.settings.save_config(project_settings=project_settings, agent_settings=agent_settings, game_settings=game_settings, filename=filename)
     print('Results should be saved here: results/{}.pkl'.format(filename))
