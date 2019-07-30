@@ -254,9 +254,9 @@ class ProposalPolicy(Policy):
             distribution = self.models[i].predict(hidden_state)[0]
             single_proposal = np.random.choice(np.arange(6), p=distribution)
             proposal.append(single_proposal)
-        out = np.array(proposal)
+        proposal = np.array(proposal)
         # self.output_is_valid(out, (3,))
-        return out
+        return proposal
 
     def train(self, x, y, sample_weight):
         if self.is_on:

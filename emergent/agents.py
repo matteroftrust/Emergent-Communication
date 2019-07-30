@@ -71,15 +71,6 @@ class Agent:
 
         return action, hidden_state
 
-    def train(self, x, rewards, y_termination, y_proposal, y_utterance=None):
-        self.termination_policy.train(x, y_termination, rewards)
-        self.proposal_policy.train(x, y_proposal, rewards)
-        if y_utterance:
-            self.utterance_policy.train(x, y_utterance, rewards)
-
-    def reward(self, reward):
-        pass
-
     # Discounting rewards collected in an episode.
     # e.g discount_factor = 0.99 then [1, 1, 1, 1] -> [3.94, 2.97, 1.99, 1.0]
     # line 5 https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
