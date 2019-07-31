@@ -39,13 +39,10 @@ class StateBatch:
 
     def __init__(self, max_trajectory_len=10, item_num=3,
                  hidden_state_size=100, ids=[0, 1]):
-        # trajectory_len = np.ceil(max_trajectory_len/2).astype(int)
         self.trajectories_0 = []
         self.trajectories_1 = []
         self.item_pools = []
         self.rewards = [[], []]
-        # self.rewards_0 = []
-        # self.rewards_1 = []
         self.hidden_states_0 = []
         self.hidden_states_1 = []
         self.ns = []
@@ -79,8 +76,6 @@ class StateBatch:
             self.hidden_states_0.append(hidden_states_odd)
             self.hidden_states_1.append(hidden_states_even)
 
-        # self.rewards_0.append(rewards[not is_first_0])
-        # self.rewards_1.append(rewards[is_first_0])
         self.rewards[0].append(rewards[0])  # no need to check because its a dict
         self.rewards[1].append(rewards[1])
 
@@ -96,8 +91,7 @@ class StateBatch:
         self.item_pools.append(batch.item_pools)
         self.rewards[0].append(batch.rewards[0])
         self.rewards[1].append(batch.rewards[1])
-        # self.rewards_0.append(batch.rewards_0)
-        # self.rewards_1.append(batch.rewards_1)
+
         self.ns.append(batch.ns)
         self.utilities_0.append(batch.utilities_0)
         self.utilities_1.append(batch.utilities_1)
@@ -107,17 +101,12 @@ class StateBatch:
         for key in keys:
             self.__dict__[key] = np.array(self.__dict__[key])
 
-    def save_log(self):
-        pass
-
     def convert_for_training(self, baseline, prosocial):
         # TODO: this whole code needs a person equipped with a brain
+
         rewards = self.rewards.copy()
         rewards_0 = []
         rewards_1 = []
-
-        # self.rewards = [self.rewards_0, self.rewards_1]
-        # print('rewardss before\n', self.rewards)
 
         # subtract baseline
         baseline = .7 * baseline + .3 * np.mean(self.rewards, 1)
@@ -125,7 +114,7 @@ class StateBatch:
         if prosocial:
             rewards[0] = rewards[0] - baseline[0]
             if not all(reward == 0 for reward in rewards[0]):
-                rewards[0] = zscore2(rewards)
+                rewards[0] = zscore2(rewards[0])
 
         else:
             rewards[0] = rewards[0] - baseline[0]
