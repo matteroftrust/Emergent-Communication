@@ -51,9 +51,8 @@ class Agent:
     def propose(self, h_c, utterance, proposal, termination_true=False, test=False, **kwargs):
         h_m, h_p = self.utterance_encoder(utterance), self.context_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
-        input = np.reshape(input, (1, 1500))
+        input = input.reshape(1, -1)
         hidden_state = self.core_layer(input)
-        hidden_state = np.reshape(hidden_state, (100,))
 
         if termination_true:
             termination = False
@@ -64,20 +63,8 @@ class Agent:
         # TODO: if atermination == True then we dont need utterance and proposal but what about training?
         utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
         proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
-        hidden_state = np.reshape(hidden_state, 100)  # TODO should be fixed before in models
+        hidden_state = hidden_state.reshape(-1)
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
 
         return action, hidden_state
-
-    # Discounting rewards collected in an episode.
-    # e.g discount_factor = 0.99 then [1, 1, 1, 1] -> [3.94, 2.97, 1.99, 1.0]
-    # line 5 https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
-    # line 61 https://github.com/rlcode/reinforcement-learning/blob/master/2-cartpole/3-reinforce/cartpole_reinforce.py
-    def discount_rewards(self, rewards):
-        discounted_rewards = np.zeros_like(rewards)
-        running_add = 0
-        for t in range(len(rewards) - 1, -1, -1):
-            running_add = running_add * self.discount_factor + rewards[t]
-            discounted_rewards[t] = running_add
-        return discounted_rewards

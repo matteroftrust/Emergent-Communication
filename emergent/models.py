@@ -101,7 +101,7 @@ class TerminationPolicy(Policy):
 
     def forward(self, hidden_state, test=False):
         self.input_is_valid(hidden_state)
-        hidden_state = np.expand_dims(hidden_state, 0)
+
         confidence = self.model.predict(hidden_state)[0][0]
         if test:
             out = [True, False][confidence < 0.5]
@@ -112,6 +112,61 @@ class TerminationPolicy(Policy):
 
     def train(self, x, y, sample_weight):
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
+        return out
+
+
+class ProposalPolicy(Policy):
+    """
+    This is parametrised by 3 separate feedforward neural networks, one for each item type,
+    which each take as input ht and output a distribution over {0...5} indicating the proposal for that item
+    """
+    def __init__(self, is_on, hidden_state_size=100, item_num=3, entropy_reg=0.05):
+        self.is_on = is_on
+        self.item_num = item_num
+        if self.is_on:
+            self.models = []
+            for _ in range(self.item_num):
+                model = Sequential([
+                    Dense(100, input_shape=(hidden_state_size,)),
+                    Dense(6, activity_regularizer=regularizers.l1(entropy_reg)),
+                    Activation('softmax')
+                ])
+                model.compile(optimizer='adam',
+                              loss='categorical_crossentropy'  # TODO these are random, needs to be checked
+                              # metrics=['accuracy']
+                              )
+
+                self.models.append(model)
+
+    @property
+    def dummy(self):
+        return np.zeros(self.item_num)
+
+    def forward(self, hidden_state, **kwargs):
+        # self.input_is_valid(hidden_state)
+        if not self.is_on:
+            # if 'item_pool' in kwargs:
+            #     return kwargs['item_pool']
+            return self.dummy
+        # hidden_state = np.expand_dims(hidden_state, 0)
+        proposal = []
+        for i in range(self.item_num):
+            distribution = self.models[i].predict(hidden_state)[0]
+            single_proposal = np.random.choice(np.arange(6), p=distribution)
+            proposal.append(single_proposal)
+        proposal = np.array(proposal)
+        # self.output_is_valid(out, (3,))
+        return proposal
+
+    def train(self, x, y, sample_weight):
+        if self.is_on:
+            for i in range(self.item_num):
+                y = convert_to_sparse(y[:, i], 6)
+                # print('whats there for training in proposal policy??? \n', x.shape, y.shape, sample_weight.shape)
+                self.models[i].train_on_batch(x, y, sample_weight=sample_weight)
+
+    def get_weights(self):
+        out = [model.get_weights() for model in self.models]
         return out
 
 
@@ -160,7 +215,6 @@ class UtterancePolicy(Policy):
         if not self.is_on:
             utterance = self.dummy
         else:
-            # hidden_state = np.expand_dims(np.expand_dims(hidden_state, 0), 2)
             # self.input_is_valid(hidden_state)
             if hidden_state is not None:  # if hidden state is passed then we set is as a new LSTM state
                 self.model.layers[1].states[0] = hidden_state
@@ -213,58 +267,3 @@ class UtterancePolicy(Policy):
             # print('sw', SW[1])
             # self.model.train_on_batch(X, Y, sample_weight=SW)
             # self.model.train_on_batch(X, Y, sample_weight=SW)
-
-
-class ProposalPolicy(Policy):
-    """
-    This is parametrised by 3 separate feedforward neural networks, one for each item type,
-    which each take as input ht and output a distribution over {0...5} indicating the proposal for that item
-    """
-    def __init__(self, is_on, hidden_state_size=100, item_num=3, entropy_reg=0.05):
-        self.is_on = is_on
-        self.item_num = item_num
-        if self.is_on:
-            self.models = []
-            for _ in range(self.item_num):
-                model = Sequential([
-                    Dense(100, input_shape=(hidden_state_size,)),
-                    Dense(6, activity_regularizer=regularizers.l1(entropy_reg)),
-                    Activation('softmax')
-                ])
-                model.compile(optimizer='adam',
-                              loss='categorical_crossentropy'  # TODO these are random, needs to be checked
-                              # metrics=['accuracy']
-                              )
-
-                self.models.append(model)
-
-    @property
-    def dummy(self):
-        return np.zeros(self.item_num)
-
-    def forward(self, hidden_state, **kwargs):
-        # self.input_is_valid(hidden_state)
-        if not self.is_on:
-            # if 'item_pool' in kwargs:
-            #     return kwargs['item_pool']
-            return self.dummy
-        hidden_state = np.expand_dims(hidden_state, 0)
-        proposal = []
-        for i in range(self.item_num):
-            distribution = self.models[i].predict(hidden_state)[0]
-            single_proposal = np.random.choice(np.arange(6), p=distribution)
-            proposal.append(single_proposal)
-        proposal = np.array(proposal)
-        # self.output_is_valid(out, (3,))
-        return proposal
-
-    def train(self, x, y, sample_weight):
-        if self.is_on:
-            for i in range(self.item_num):
-                y = convert_to_sparse(y[:, i], 6)
-                # print('whats there for training in proposal policy??? \n', x.shape, y.shape, sample_weight.shape)
-                self.models[i].train_on_batch(x, y, sample_weight=sample_weight)
-
-    def get_weights(self):
-        out = [model.get_weights() for model in self.models]
-        return out

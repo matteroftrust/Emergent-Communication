@@ -13,7 +13,7 @@ class Action:
 
     def __init__(self, terminate, utterance, proposal, id=None):
         self.proposed_by = id
-        self.terminate = bool(terminate)  # should be fixed somewhere becaouse it gets [[val]] in StateBatch
+        self.terminate = bool(terminate)  # TODO should be fixed somewhere becaouse it gets [[val]] in StateBatch
         self.utterance = utterance
         self.proposal = proposal.astype(int)
 
@@ -54,8 +54,10 @@ class StateBatch:
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
         trajectory_odd = trajectory[1:][::2]
 
+        # print('what comes to append', len(hidden_states))
         hidden_states_even = hidden_states[::2]
         hidden_states_odd = hidden_states[1:][::2]
+        # print('whats after', hidden_states_even.shape, hidden_states_odd.shape)
 
         hidden_states_odd.reverse()
         hidden_states_even.reverse()
