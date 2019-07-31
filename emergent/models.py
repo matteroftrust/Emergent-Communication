@@ -3,7 +3,7 @@ import numpy as np
 from .utils import validation, convert_to_sparse
 
 from tensorflow.python.keras import Input, regularizers, optimizers
-from tensorflow.python.keras.layers import Dense, Activation, LSTM
+from tensorflow.python.keras.layers import Dense, Activation, LSTM, Flatten
 from tensorflow.python.keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
 from tensorflow.python.keras.models import Sequential, Model
@@ -14,7 +14,7 @@ from tensorflow.python.keras.utils import to_categorical
 class CoreLayer:
     def __init__(self):
         self.model = Sequential([
-            Dense(100, input_shape=(1500,), name="dense"),
+            Dense(100, input_shape=(300,), name="dense"),
             Activation('relu'),
         ])
 
@@ -23,20 +23,28 @@ class CoreLayer:
 
 
 class NumberSequenceEncoder:
-    def __init__(self, input_dim, output_dim, hidden_state_size=100):
+    def __init__(self, input_dim, input_len, hidden_state_size=100):
         """
         item_dim is a number of different values that can occur as unput. I.e. for utterance input_dim=vocab_size.
         """
+        # self.model = Sequential([
+        #     Flatten(input_dim=input_dim, output_dim=output_dim),
+        #     Embedding(),
+        #     LSTM(hidden_state_size)
+        # ])
+
         self.model = Sequential([
-            Embedding(input_dim=input_dim, output_dim=output_dim),
-            LSTM(hidden_state_size)
+            Embedding(input_dim=input_dim, output_dim=hidden_state_size, input_length=input_len),
         ])
+        self.lstm = Sequential([LSTM(input_shape=(1, input_len * hidden_state_size), units=hidden_state_size)])
 
     def __call__(self, input):
         return self.encode(input)
 
     def encode(self, input):
-        return self.model.predict(input)
+        input = input.reshape(1, -1)
+        embedding = self.model.predict(input).reshape(1, 1, -1)
+        return self.lstm.predict(embedding)
 
 
 class Policy:

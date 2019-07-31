@@ -24,8 +24,9 @@ class Agent:
 
         # NumberSequenceEncoders
         # TODO: input_dim seems to be wrong in here!
-        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)  # is this correct?
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, output_dim=hidden_state_size)
+        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=6)  # is this correct?
+        self.proposal_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=3)
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=utterance_len)
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
         self.core_layer = CoreLayer()
@@ -49,7 +50,7 @@ class Agent:
                 return out
 
     def propose(self, h_c, utterance, proposal, termination_true=False, test=False, **kwargs):
-        h_m, h_p = self.utterance_encoder(utterance), self.context_encoder(proposal)
+        h_m, h_p = self.utterance_encoder(utterance), self.proposal_encoder(proposal)
         input = np.concatenate([h_c, h_m, h_p])
         input = input.reshape(1, -1)
         hidden_state = self.core_layer(input)
