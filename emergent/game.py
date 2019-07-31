@@ -240,8 +240,8 @@ class Game:
         rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
-        proposer_context = np.concatenate((item_pool, proposer.utilities))  # context doesnt change during negotiation so can be outside of the loop
-        hearer_context = np.concatenate((item_pool, hearer.utilities))
+        proposer_context = proposer.context_encoder(np.concatenate((item_pool, proposer.utilities)))  # context doesnt change during negotiation so can be outside of the loop
+        hearer_context = hearer.context_encoder(np.concatenate((item_pool, hearer.utilities)))
         negotiations = []
         hidden_states = []
         # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
