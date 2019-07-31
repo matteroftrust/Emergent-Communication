@@ -232,7 +232,7 @@ class ProposalPolicy(Policy):
                     Activation('softmax')
                 ])
                 model.compile(optimizer='adam',
-                              loss='binary_crossentropy'  # TODO these are random, needs to be checked
+                              loss='categorical_crossentropy'  # TODO these are random, needs to be checked
                               # metrics=['accuracy']
                               )
 

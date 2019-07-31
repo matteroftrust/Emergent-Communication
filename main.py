@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--prosocial', dest='prosocial')
     parser.add_argument('-te', '--test_every', dest='test_every', type=int)
     parser.add_argument('-f', '--filename', dest='filename')
-    parser.set_defaults(validation=False, prompt='status', batch_size=2, test_batch_size=2, episode_num=2,
+    parser.set_defaults(validation=False, prompt='none', batch_size=2, test_batch_size=2, episode_num=2,
                         acceleration=False, channels='proposal', prosocial=False, test_every=50,
                         filename=str(dt.datetime.today()).replace(' ', '').replace(':', '').replace('.', ''))
     args = parser.parse_args()
