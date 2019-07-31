@@ -62,8 +62,13 @@ class Agent:
         # if termination:
         #     action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
         # TODO: if atermination == True then we dont need utterance and proposal but what about training?
-        utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
-        proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
+        if not termination:
+            utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
+            proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
+        else:
+            utterance = None
+            proposal = np.array([np.nan, np.nan, np.nan])
+
         hidden_state = hidden_state.reshape(-1)
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)

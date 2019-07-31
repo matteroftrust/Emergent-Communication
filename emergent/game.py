@@ -1,9 +1,7 @@
-from numpy.random import random_integers
 import numpy as np
 import pickle as pkl
-from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, zscore2, printProgressBar
+from .utils import generate_item_pool, generate_negotiation_time, discounts, flatten, zscore2, printProgressBar
 
 
 class Action:
@@ -15,7 +13,7 @@ class Action:
         self.proposed_by = id
         self.terminate = bool(terminate)  # TODO should be fixed somewhere becaouse it gets [[val]] in StateBatch
         self.utterance = utterance
-        self.proposal = proposal.astype(int)
+        self.proposal = proposal.astype(int) if not np.isnan(proposal[0]) else proposal  # TODO super ugly
 
     def __str__(self):
         return 'Action prop_by: {}, term: {}, utter: {}, prop: {}'.format(self.proposed_by, self.terminate, self.utterance, self.proposal)
@@ -23,6 +21,8 @@ class Action:
     __repr__ = __str__
 
     def is_valid(self, item_pool):
+        if self.terminate:
+            return True
         return not (self.proposal > item_pool).any()
 
 
@@ -293,10 +293,33 @@ class Game:
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
 
-        # print('what goes to train000 ', x_0.shape, y_termination_0.shape)
-        # print('what goes to train111 ', x_1.shape, y_termination_1.shape)
+        # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
+
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
+
+        rm_ids = []
+        # print('iterate opver this malak', y_proposal_0.shape)
+
+        # TODO: hey is there a way to do that better?
+        for i, y in enumerate(y_proposal_0):
+            if np.isnan(y[0]):
+                rm_ids.append(i)
+
+        y_proposal_0 = np.delete(y_proposal_0, rm_ids, axis=0)
+        rewards[0] = np.delete(rewards[0], rm_ids)
+        x_0 = np.delete(x_0, rm_ids, axis=0)
+
+        rm_ids = []
+        for i, y in enumerate(y_proposal_1):
+            if np.isnan(y[0]):
+                rm_ids.append(i)
+
+        y_proposal_1 = np.delete(y_proposal_1, rm_ids, axis=0)
+        rewards[1] = np.delete(rewards[1], rm_ids)
+        x_1 = np.delete(x_1, rm_ids, axis=0)
+        # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
+        # print('what goes to train111 ', x_1.shape, y_proposal_1.shape, rewards[1].shape)
 
         agent_0.proposal_policy.train(x_0, y_proposal_0, rewards[0])
         agent_1.proposal_policy.train(x_1, y_proposal_1, rewards[1])

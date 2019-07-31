@@ -90,6 +90,8 @@ def print_trajectory(t, name):
 
 
 def convert_to_sparse(arr, n):
+    # TODO: this should be optimized
+    arr = arr.astype(int)
     out = np.zeros((len(arr), n), dtype=int)
     for i, row in enumerate(out):
         row[arr[i]] = 1
