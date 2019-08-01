@@ -70,6 +70,8 @@ class StateBatch:
         batch.utilities_0 = np_copy(self.utilities_0)
         batch.utilities_1 = np_copy(self.utilities_1)
 
+        return batch
+
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, utilities, max_trajectory_len=10):
 
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
