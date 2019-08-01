@@ -206,7 +206,7 @@ class StateBatch:
         if prosocial:
             rewards[0] = rewards[0] - baseline[0]
             if not all(reward == 0 for reward in rewards[0]):
-                rewards[0] = zscore2_gpu(rewards[0])
+                rewards[0] = zscore2(rewards[0])
 
         else:
             rewards[0] = rewards[0] - baseline[0]
@@ -214,9 +214,9 @@ class StateBatch:
 
             # standardize rewards
             if not all(reward == 0 for reward in rewards[0]):
-                rewards[0] = zscore2_gpu(rewards[0])
+                rewards[0] = zscore2(rewards[0])
             if not all(reward == 0 for reward in rewards[1]):
-                rewards[1] = zscore2_gpu(rewards[1])
+                rewards[1] = zscore2(rewards[1])
 
         for i in range(len(self.ns)):
 
