@@ -92,7 +92,7 @@ def zscore2_gpu(arr):
     zscored = cupy.array(zscore(arr))
     if cupy.isnan(zscored).any():
         return arr
-    return zscored
+    return np.array(zscored)
 
 
 def print_trajectory(t, name):
