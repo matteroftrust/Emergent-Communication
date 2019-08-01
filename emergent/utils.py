@@ -89,7 +89,7 @@ def zscore2(arr):
 
 
 def zscore2_gpu(arr):
-    zscored = zscore(arr)
+    zscored = cupy.array(zscore(arr))
     if cupy.isnan(zscored).any():
         return arr
     return zscored
