@@ -350,12 +350,14 @@ class Game:
         return test_batch
 
     def reinforce(self, batch, baseline):
-        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
         import timeit, functools
         t = timeit.Timer(functools.partial(batch.convert_for_training, baseline, self.prosocial))
-        print('time CPU!!!', t.timeit(5))
+        print('time CPU!!!', t.timeit(10))
         t = timeit.Timer(functools.partial(batch.convert_for_training_gpu, baseline, self.prosocial))
-        print('time GPU!!!', t.timeit(5))
+        print('time GPU!!!', t.timeit(10))
+
+        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
+
 
 
         if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
