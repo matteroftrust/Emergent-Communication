@@ -351,9 +351,13 @@ class Game:
 
     def reinforce(self, batch, baseline):
         import timeit, functools
-        t = timeit.Timer(functools.partial(batch.convert_for_training, baseline, self.prosocial))
+
+        batch_cpu, baseline_cpu = batch.copy(), np.copy(baseline)
+        batch_gpu, baseline_gpu = batch.copy(), np.copy(baseline)
+
+        t = timeit.Timer(functools.partial(batch_cpu.convert_for_training, baseline_cpu, self.prosocial))
         print('time CPU!!!', t.timeit(10))
-        t = timeit.Timer(functools.partial(batch.convert_for_training_gpu, baseline, self.prosocial))
+        t = timeit.Timer(functools.partial(batch_gpu.convert_for_training_gpu, baseline_gpu, self.prosocial))
         print('time GPU!!!', t.timeit(10))
 
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
