@@ -194,6 +194,7 @@ class StateBatch:
     def convert_for_training_gpu(self, baseline, prosocial):
         # TODO: this whole code needs a person equipped with a brain
 
+        self.numpize()
         rewards = self.rewards.copy()
         rewards_0 = []
         rewards_1 = []
