@@ -1,6 +1,6 @@
 from .agents import Agent
 from .game import Game
-from .models import TerminationPolicy, ProposalPolicy, UtterancePolicy, NumberSequenceEncoder
+from .models import TerminationPolicy, ProposalPolicy, UtterancePolicy, NumberSequenceEncoder, CoreLayer
 
 from keras.layers import Dense, Activation
 from keras.models import Sequential
@@ -71,22 +71,15 @@ class TestStaticAgent(Agent):
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
 
-        # super(Agent, self).__init__(*args, **kwargs)
-        # self. = StaticTestTerminationPolicy(kwargs)
         self.termination_policy = StaticTestTerminationPolicy(response=term_response)
         self.proposal_policy = StaticTestProposalPolicy(response=prop_response, is_on=True, **kwargs)
         self.utterance_policy = StaticTestUtterancePolicy(response=utter_response, is_on=False, **kwargs)
 
-        self.context_encoder = NumberSequenceEncoder(input_dim=11, output_dim=100)  # is this correct?
-        # self.proposal_encoder = NumberSequenceEncoder(input_dim=6, output_dim=hidden_state_size)
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=11, output_dim=100)
+        self.context_encoder = NumberSequenceEncoder(input_dim=11, input_len=6)
+        self.proposal_encoder = NumberSequenceEncoder(input_dim=6, input_len=3)
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=11, input_len=6)
 
-        # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
-        self.core_layer_model = Sequential([
-            Dense(100, input_shape=(1500,), name="{}_dense".format(self.id)),
-            Activation('relu'),
-        ])
-        self.core_layer = self.core_layer_model.predict
+        self.core_layer = CoreLayer()
 
         @classmethod
         def create_agents(self, n, *args, **kwargs):

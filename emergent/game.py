@@ -196,23 +196,20 @@ class Game:
     def play(self, save_as=''):
         results = []
 
-        if self.prosocial:  # if prosocial we do need only a prosocial reward R = R_A + R_B
+        if self.prosocial:  # if prosocial we need only a prosocial reward R = R_A + R_B
             baseline = np.zeros(1)
         else:
             baseline = np.zeros(2)
 
         for i in range(self.episode_num):
-            # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % self.test_every == 0:  # TODO remember it should be 50!
+            if i % self.test_every == 0:
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 printProgressBar(i, self.episode_num, prefix='Progress:', suffix='Complete {} / {}'.format(i, self.episode_num), length=50)
 
-            # print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch = self.next_episode()
-            # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
-
             baseline = self.reinforce(batch, baseline)
+
         with open('results/{}.pkl'.format(self.filename), 'wb') as handle:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
 
@@ -221,7 +218,6 @@ class Game:
         # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         # TODO whould be faster to generate data here
         for i in range(self.batch_size):
-            # print_status('Starting batch {}'.format(i))
             # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()
             negotiation_time = generate_negotiation_time()
@@ -242,15 +238,17 @@ class Game:
         rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
-        proposer_context = proposer.context_encoder(np.concatenate((item_pool, proposer.utilities)))  # context doesnt change during negotiation so can be outside of the loop
-        hearer_context = hearer.context_encoder(np.concatenate((item_pool, hearer.utilities)))
+        contexts = {  # context doesnt change during negotiation so can be outside of the loop
+            proposer.id: proposer.context_encoder(np.concatenate((item_pool, proposer.utilities))),
+            hearer.id: hearer.context_encoder(np.concatenate((item_pool, hearer.utilities)))
+        }
         negotiations = []
         hidden_states = []
         # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
-        termination_true = True
-        for t in range(n):
+        termination_true = True  # during the first round an agent can't terminate
 
-            action, hidden_state = proposer.propose(hearer_context, action.utterance, action.proposal, termination_true=termination_true,
+        for t in range(n):
+            action, hidden_state = proposer.propose(contexts[proposer.id], action.utterance, action.proposal, termination_true=termination_true,
                                                     test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
@@ -267,7 +265,6 @@ class Game:
                 return item_pool, negotiations, rewards, n, hidden_states
 
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
-            proposer_context, hearer_context = hearer_context, proposer_context
             termination_true = False
 
         return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states
@@ -307,6 +304,7 @@ class Game:
                 rm_ids.append(i)
 
         y_proposal_0 = np.delete(y_proposal_0, rm_ids, axis=0)
+        y_utterance_0 = np.delete(y_utterance_0, rm_ids, axis=0)
         rewards[0] = np.delete(rewards[0], rm_ids)
         x_0 = np.delete(x_0, rm_ids, axis=0)
 
@@ -316,6 +314,7 @@ class Game:
                 rm_ids.append(i)
 
         y_proposal_1 = np.delete(y_proposal_1, rm_ids, axis=0)
+        y_utterance_1 = np.delete(y_utterance_1, rm_ids, axis=0)
         rewards[1] = np.delete(rewards[1], rm_ids)
         x_1 = np.delete(x_1, rm_ids, axis=0)
         # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
@@ -327,7 +326,6 @@ class Game:
         agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
         agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
 
-        # print('Reinforce done!!!!!')
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round

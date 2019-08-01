@@ -135,12 +135,11 @@ class ProposalPolicy(Policy):
             self.models = []
             for _ in range(self.item_num):
                 model = Sequential([
-                    Dense(100, input_shape=(hidden_state_size,)),
-                    Dense(6, activity_regularizer=regularizers.l1(entropy_reg)),
+                    Dense(6, input_shape=(hidden_state_size,), activity_regularizer=regularizers.l1(entropy_reg)),
                     Activation('softmax')
                 ])
                 model.compile(optimizer='adam',
-                              loss='categorical_crossentropy'  # TODO these are random, needs to be checked
+                              loss='categorical_crossentropy'
                               # metrics=['accuracy']
                               )
 
@@ -151,19 +150,14 @@ class ProposalPolicy(Policy):
         return np.zeros(self.item_num)
 
     def forward(self, hidden_state, **kwargs):
-        # self.input_is_valid(hidden_state)
         if not self.is_on:
-            # if 'item_pool' in kwargs:
-            #     return kwargs['item_pool']
             return self.dummy
-        # hidden_state = np.expand_dims(hidden_state, 0)
         proposal = []
         for i in range(self.item_num):
             distribution = self.models[i].predict(hidden_state)[0]
             single_proposal = np.random.choice(np.arange(6), p=distribution)
             proposal.append(single_proposal)
         proposal = np.array(proposal)
-        # self.output_is_valid(out, (3,))
         return proposal
 
     def train(self, x, y, sample_weight):
@@ -198,10 +192,10 @@ class UtterancePolicy(Policy):
 
         if self.is_on:
             inputs = Input(batch_shape=(1, 1, 1), name='utter_input')
-            lstm1 = LSTM(100, stateful=True, name='utter_lstm',
-                         activity_regularizer=regularizers.l1(entropy_reg))(inputs)
-            dense = Dense(vocab_size, activation='softmax', name='utter_dense')(lstm1)
-            model = Model(inputs=inputs, outputs=[dense])
+            lstm1 = LSTM(vocab_size, stateful=True, name='utter_lstm',
+                         activity_regularizer=regularizers.l1(entropy_reg),
+                         activation='softmax')(inputs)
+            model = Model(inputs=inputs, outputs=[lstm1])
             model.compile(optimizer='adam',
                           loss='categorical_crossentropy'
                           # TODO might be cool to use the one below (requires different shape in training)
