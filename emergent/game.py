@@ -54,6 +54,22 @@ class StateBatch:
         self.utilities_0 = []
         self.utilities_1 = []
 
+    def copy(self):
+
+        def np_copy(arr):
+            return list(np.copy(arr))
+
+        batch = StateBatch()
+        batch.trajectories_0 = np_copy(self.trajectories_0)
+        batch.trajectories_1 = np_copy(self.trajectories_1)
+        batch.item_pool = np_copy(self.item_pools)
+        batch.rewards = np_copy(self.rewards)
+        batch.hidden_states_0 = np_copy(self.hidden_states_0)
+        batch.hidden_states_0 = np_copy(self.hidden_states_1)
+        batch.ns = np_copy(self.ns)
+        batch.utilities_0 = np_copy(self.utilities_0)
+        batch.utilities_1 = np_copy(self.utilities_1)
+
     def append(self, i, n, trajectory, rewards, item_pool, hidden_states, utilities, max_trajectory_len=10):
 
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
