@@ -199,6 +199,7 @@ class StateBatch:
         rewards_1 = []
 
         # subtract baseline
+        baseline = np.array(baseline)
         baseline = .7 * baseline + .3 * cupy.mean(self.rewards, 1)
 
         if prosocial:
