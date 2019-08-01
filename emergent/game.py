@@ -3,6 +3,11 @@ import pickle as pkl
 
 from .utils import generate_item_pool, generate_negotiation_time, discounts, flatten, zscore2, printProgressBar
 
+try:
+    import cupy
+    from .utils import zscore2_gpu
+except ImportError:
+    print('cupy not found.')
 
 class Action:
     """
@@ -168,6 +173,71 @@ class StateBatch:
         # print('rewardss after\n', rewards)
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
 
+    def convert_for_training_gpu(self, baseline, prosocial):
+        # TODO: this whole code needs a person equipped with a brain
+
+        rewards = self.rewards.copy()
+        rewards_0 = []
+        rewards_1 = []
+
+        # subtract baseline
+        baseline = .7 * baseline + .3 * cupy.mean(self.rewards, 1)
+
+        if prosocial:
+            rewards[0] = rewards[0] - baseline[0]
+            if not all(reward == 0 for reward in rewards[0]):
+                rewards[0] = zscore2_gpu(rewards[0])
+
+        else:
+            rewards[0] = rewards[0] - baseline[0]
+            rewards[1] = rewards[1] - baseline[0]
+
+            # standardize rewards
+            if not all(reward == 0 for reward in rewards[0]):
+                rewards[0] = zscore2_gpu(rewards[0])
+            if not all(reward == 0 for reward in rewards[1]):
+                rewards[1] = zscore2_gpu(rewards[1])
+
+        for i in range(len(self.ns)):
+
+            if prosocial:
+                reward_0 = rewards[0][i]
+                reward_1 = rewards[0][i]
+            else:
+                reward_0 = rewards[0][i]
+                reward_1 = rewards[1][i]
+
+            trajectory_rewards_0 = discounts(reward_0, len(self.trajectories_0[i]))
+            trajectory_rewards_1 = discounts(reward_1, len(self.trajectories_1[i]))
+
+            rewards_0.append(trajectory_rewards_0)
+            rewards_1.append(trajectory_rewards_1)
+
+        rewards_0 = flatten(rewards_0)
+        rewards_1 = flatten(rewards_1)
+
+        trajectories_0 = flatten(self.trajectories_0)
+        trajectories_1 = flatten(self.trajectories_1)
+
+        y_proposal_0 = cupy.array([elem.proposal for elem in trajectories_0])
+        y_proposal_1 = cupy.array([elem.proposal for elem in trajectories_1])
+
+        y_termination_0 = cupy.array([elem.terminate for elem in trajectories_0])
+        y_termination_1 = cupy.array([elem.terminate for elem in trajectories_1])
+
+        y_utterance_0 = cupy.array([elem.utterance for elem in trajectories_0])
+        y_utterance_1 = cupy.array([elem.utterance for elem in trajectories_1])
+
+        x_0 = flatten(self.hidden_states_0)
+        x_1 = flatten(self.hidden_states_1)
+
+        # print('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
+        # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
+
+        rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
+        # print('rewardss after\n', rewards)
+        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
+
 
 class Game:
 
@@ -281,6 +351,13 @@ class Game:
 
     def reinforce(self, batch, baseline):
         x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
+        import timeit, functools
+        t = timeit.Timer(functools.partial(batch.convert_for_training, baseline, self.prosocial))
+        print('time CPU!!!', t.timeit(5))
+        t = timeit.Timer(functools.partial(batch.convert_for_training_gpu, baseline, self.prosocial))
+        print('time GPU!!!', t.timeit(5))
+
+
         if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
             return baseline
         if len(x_0) == 0:

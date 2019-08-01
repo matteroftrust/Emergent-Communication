@@ -5,6 +5,11 @@ from tensorflow.python.keras import backend as K
 import numpy as np
 from scipy.stats import zscore
 
+try:
+    import cupy
+except ImportError:
+    print('cupy not found.')
+
 
 project_settings, _, _ = load_settings()
 
@@ -79,6 +84,13 @@ def flatten(arr):
 def zscore2(arr):
     zscored = zscore(arr)
     if np.isnan(zscored).any():
+        return arr
+    return zscored
+
+
+def zscore2_gpu(arr):
+    zscored = zscore(arr)
+    if cupy.isnan(zscored).any():
         return arr
     return zscored
 
