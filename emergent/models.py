@@ -49,37 +49,48 @@ class NumberSequenceEncoder:
                      # activity_regularizer=regularizers.l1(entropy_reg),
                      # activation='softmax')
         model = Model(inputs=inputs, outputs=[lstm])
-        model.compile(optimizer='adam',
-                      loss='categorical_crossentropy',
+        model.compile(optimizer='adam', loss='mean_squared_error'
+                      # loss='categorical_crossentropy'
                       # TODO might be cool to use the one below (requires different shape in training)
                       # loss='sparse_categorical_crossentropy',
-                      metrics=['mean_squared_error']
+                      # metrics=['mean_squared_error']
                       # sample_weight_mode="temporal"
                       )
         self.lstm = model
         self.x = []
         self.y = []
 
-    def __call__(self, input):
-        return self.encode(input)
+    def __call__(self, input, **kwargs):
+        return self.encode(input, **kwargs)
 
-    def encode(self, input):
+    def append_previous(self):
+        self.x.append(self.x[-1])
+        self.y.append(self.y[-1])
+
+    def encode(self, input, test=False):
         input = input.reshape(1, -1)
         embedding = self.embedding.predict(input)
         out = self.lstm.predict(embedding)
-        print('embedd shape', embedding.shape)
-        print('out    shape', out.shape)
-        self.x.append(embedding)
-        self.y.append(out)
+        # print('embedd shape', embedding.shape)
+        # print('out    shape', out.shape)
+        if not test:
+            self.x.append(embedding)
+            self.y.append(out)
         return out
 
     def train(self, sample_weight):
-        x = np.array(self.x).reshape(-1, self.input_len, self.hidden_state_size)
+        x = np.array(self.x)
+        # print('x what are you', x.shape)
+        x = x.reshape(-1, self.input_len, self.hidden_state_size)
+        # print('x what are you', x.shape)
+
         y = np.array(self.y).reshape(-1, self.hidden_state_size)
 
-        print('nseee shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
-        loss = self.lstm.train_on_batch(x, y, sample_weight)
-        print('losss!!!!!', loss)
+        # print('nseee shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
+        for xx, yy, ssww in zip(x, y, sample_weight):
+            self.lstm.train_on_batch(xx.reshape(1, -1, self.hidden_state_size), yy.reshape(1, self.hidden_state_size), ssww.reshape(1))
+        # loss = self.lstm.train_on_batch(x, y, sample_weight)
+        # print('losss!!!!!', loss)
 
 
 class Policy:
@@ -154,7 +165,6 @@ class TerminationPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
-        print('terminatino shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
         return out
 

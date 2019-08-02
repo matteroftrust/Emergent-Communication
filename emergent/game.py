@@ -248,6 +248,9 @@ class Game:
         termination_true = True  # during the first round an agent can't terminate
 
         for t in range(n):
+            if t > 0: # TODO: any nicer way? do we even need these since the context remains the same?
+                proposer.context_encoder.append_previous()
+                hearer.context_encoder.append_previous()
             action, hidden_state = proposer.propose(contexts[proposer.id], action.utterance, action.proposal, termination_true=termination_true,
                                                     test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
 
@@ -292,12 +295,11 @@ class Game:
         agent_1 = self.agents[1]
 
         # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
-        print(rewards[0].shape, rewards[1].shape)
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
         for agent in self.agents:
-            # agent.context_encoder.train(rewards[agent.id])
+            agent.context_encoder.train(rewards[agent.id])
             agent.utterance_encoder.train(rewards[agent.id])
             agent.proposal_encoder.train(rewards[agent.id])
 

@@ -50,7 +50,7 @@ class Agent:
                 return out
 
     def propose(self, h_c, utterance, proposal, termination_true=False, test=False, **kwargs):
-        h_m, h_p = self.utterance_encoder(utterance), self.proposal_encoder(proposal)
+        h_m, h_p = self.utterance_encoder(utterance, test=test), self.proposal_encoder(proposal, test=test)
         input = np.concatenate([h_c, h_m, h_p])
         input = input.reshape(1, -1)
         hidden_state = self.core_layer(input)
