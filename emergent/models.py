@@ -24,7 +24,10 @@ class CoreLayer:
 
 class NumberSequenceEncoder:
     def __init__(self, input_dim, input_len, hidden_state_size=100):
+    # def __init__(self, input_dim=10, input_len=6, hidden_state_size=100):
         """
+        input_dim is vocab size for embedding table
+        input_len is length of a sequenece
         item_dim is a number of different values that can occur as unput. I.e. for utterance input_dim=vocab_size.
         """
         # self.model = Sequential([
@@ -32,19 +35,49 @@ class NumberSequenceEncoder:
         #     Embedding(),
         #     LSTM(hidden_state_size)
         # ])
+        self.input_len = input_len
+        self.hidden_state_size = hidden_state_size
 
-        self.model = Sequential([
+        self.embedding = Sequential([
             Embedding(input_dim=input_dim, output_dim=hidden_state_size, input_length=input_len),
         ])
-        self.lstm = Sequential([LSTM(input_shape=(1, input_len * hidden_state_size), units=hidden_state_size)])
+        # self.lstm = Sequential([LSTM(units=hidden_state_size, input_shape=(1, hidden_state_size),
+        #                              return_sequences=False)])
+
+        inputs = Input(batch_shape=(1, input_len, hidden_state_size))
+        lstm = LSTM(units=hidden_state_size)(inputs)
+                     # activity_regularizer=regularizers.l1(entropy_reg),
+                     # activation='softmax')
+        model = Model(inputs=inputs, outputs=[lstm])
+        model.compile(optimizer='adam',
+                      loss='categorical_crossentropy',
+                      # TODO might be cool to use the one below (requires different shape in training)
+                      # loss='sparse_categorical_crossentropy',
+                      metrics=['mean_squared_error']
+                      # sample_weight_mode="temporal"
+                      )
+        self.lstm = model
+        self.x = []
+        self.y = []
 
     def __call__(self, input):
         return self.encode(input)
 
     def encode(self, input):
         input = input.reshape(1, -1)
-        embedding = self.model.predict(input).reshape(1, 1, -1)
-        return self.lstm.predict(embedding)
+        embedding = self.embedding.predict(input)
+        out = self.lstm.predict(embedding)
+        self.x.append(embedding)
+        self.y.append(out)
+        return out
+
+    def train(self, sample_weight):
+        x = np.array(self.x).reshape(-1, self.input_len, self.hidden_state_size)
+        y = np.array(self.y).reshape(-1, self.hidden_state_size)
+
+        print('nseee shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
+        loss = self.lstm.train_on_batch(x, y, sample_weight)
+        print('losss!!!!!', loss)
 
 
 class Policy:
@@ -119,6 +152,7 @@ class TerminationPolicy(Policy):
         return out
 
     def train(self, x, y, sample_weight):
+        print('terminatino shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
         out = self.model.train_on_batch(x, y, sample_weight=sample_weight)
         return out
 

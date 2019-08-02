@@ -54,6 +54,8 @@ class Agent:
         input = np.concatenate([h_c, h_m, h_p])
         input = input.reshape(1, -1)
         hidden_state = self.core_layer(input)
+        # if self.id == 1:
+        #     print('this is hs {}'.format(hidden_state[0][0:6]))
 
         if termination_true:
             termination = False

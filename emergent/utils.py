@@ -20,6 +20,7 @@ class Results:
 
 
 def generate_item_pool():
+    return np.array([1,1,1])
     while True:
         item_pool = random_integers(0, 5, 3)
         if item_pool.sum():

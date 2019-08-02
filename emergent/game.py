@@ -250,6 +250,7 @@ class Game:
         for t in range(n):
             action, hidden_state = proposer.propose(contexts[proposer.id], action.utterance, action.proposal, termination_true=termination_true,
                                                     test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
+
             negotiations.append(action)
             hidden_states.append(hidden_state)
             # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
@@ -291,9 +292,14 @@ class Game:
         agent_1 = self.agents[1]
 
         # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
-
+        print(rewards[0].shape, rewards[1].shape)
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
+
+        for agent in self.agents:
+            # agent.context_encoder.train(rewards[agent.id])
+            agent.utterance_encoder.train(rewards[agent.id])
+            agent.proposal_encoder.train(rewards[agent.id])
 
         rm_ids = []
         # print('iterate opver this malak', y_proposal_0.shape)
@@ -325,7 +331,6 @@ class Game:
 
         agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
         agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
-
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
