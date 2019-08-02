@@ -25,14 +25,15 @@ if __name__ == '__main__':
 
         rewards_0.append(state_batch.mean_st_reward_0)
         rewards_1.append(state_batch.mean_st_reward_1)
+        print(state_batch.avg_trajectory_len)
 
     X = np.linspace(1, len(rewards_0), len(rewards_0))
     plt.figure(figsize=(15, 10))
     plt.axes().set_ylim((-0.2, 1.2))
-    plt.legend(['Agent 0', 'Agent 1'])
     plt.xlabel('test iterations')
     plt.ylabel('relative reward')
     plt.title('Relative rewards')
     sns.lineplot(x=X, y=rewards_0)
     sns.lineplot(x=X, y=rewards_1)
+    plt.legend(['Agent 0', 'Agent 1'])
     plt.savefig('figs/{}_rewards.png'.format(filename))

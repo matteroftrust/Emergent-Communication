@@ -67,5 +67,13 @@ def compute_batch(batch):
     is_nan_1 = np.isnan(batch.st_rewards_1)
     batch.st_rewards_0[is_nan_0] = 0
     batch.st_rewards_1[is_nan_1] = 0
+
     batch.mean_st_reward_0 = np.mean(batch.st_rewards_0)
     batch.mean_st_reward_1 = np.mean(batch.st_rewards_1)
+
+    batch.trajectory_len = []
+    for t1, t2 in zip(batch.trajectories_0, batch.trajectories_1):
+        for tt1, tt2 in zip(t1, t2):
+            batch.trajectory_len.append(len(tt1) + len(tt2))
+
+    batch.avg_trajectory_len = np.mean(batch.trajectory_len)

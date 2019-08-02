@@ -20,7 +20,10 @@ class Results:
 
 
 def generate_item_pool():
-    return random_integers(0, 5, 3)
+    while True:
+        item_pool = random_integers(0, 5, 3)
+        if item_pool.sum():
+            return item_pool
 
 
 def generate_negotiation_time():
