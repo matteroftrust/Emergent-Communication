@@ -67,6 +67,8 @@ class NumberSequenceEncoder:
         input = input.reshape(1, -1)
         embedding = self.embedding.predict(input)
         out = self.lstm.predict(embedding)
+        print('embedd shape', embedding.shape)
+        print('out    shape', out.shape)
         self.x.append(embedding)
         self.y.append(out)
         return out
