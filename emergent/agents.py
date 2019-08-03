@@ -24,9 +24,9 @@ class Agent:
 
         # NumberSequenceEncoders
         # TODO: input_dim seems to be wrong in here!
-        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=6)  # is this correct?
-        self.proposal_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=3)
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=utterance_len)
+        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=6, name='context_{}'.format(self.id))  # is this correct?
+        self.proposal_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=3, name='proposal_{}'.format(self.id))
+        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=utterance_len, name='utterance_{}'.format(self.id))
 
         # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
         self.core_layer = CoreLayer()
@@ -49,9 +49,9 @@ class Agent:
                 self.utilities = out
                 return out
 
-    def propose(self, h_c, utterance, proposal, termination_true=False, test=False, **kwargs):
-        h_m, h_p = self.utterance_encoder(utterance, test=test), self.proposal_encoder(proposal, test=test)
-        input = np.concatenate([h_c, h_m, h_p])
+    def propose(self, context, utterance, proposal, test, termination_true=False):
+        (hc, hc_embedding), (hp, hp_embedding), (hm, hm_embedding) = self.context_encoder(context, test=test), self.proposal_encoder(proposal, test=test), self.utterance_encoder(utterance, test=test)
+        input = np.concatenate([hc, hm, hp])
         input = input.reshape(1, -1)
         hidden_state = self.core_layer(input)
         # if self.id == 1:
@@ -66,7 +66,7 @@ class Agent:
         # TODO: if atermination == True then we dont need utterance and proposal but what about training?
         if not termination:
             utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
-            proposal = self.proposal_policy(hidden_state, **kwargs)  # should test also be passed here?
+            proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
         else:
             utterance = None
             proposal = np.array([np.nan, np.nan, np.nan])
@@ -75,4 +75,4 @@ class Agent:
 
         action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
 
-        return action, hidden_state
+        return action, hidden_state, [hc_embedding, hm_embedding, hp_embedding], [hc, hm, hp]

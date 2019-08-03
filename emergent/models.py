@@ -23,20 +23,16 @@ class CoreLayer:
 
 
 class NumberSequenceEncoder:
-    def __init__(self, input_dim, input_len, hidden_state_size=100):
+    def __init__(self, input_dim, input_len, hidden_state_size=100, name=''):
     # def __init__(self, input_dim=10, input_len=6, hidden_state_size=100):
         """
         input_dim is vocab size for embedding table
         input_len is length of a sequenece
         item_dim is a number of different values that can occur as unput. I.e. for utterance input_dim=vocab_size.
         """
-        # self.model = Sequential([
-        #     Flatten(input_dim=input_dim, output_dim=output_dim),
-        #     Embedding(),
-        #     LSTM(hidden_state_size)
-        # ])
         self.input_len = input_len
         self.hidden_state_size = hidden_state_size
+        self.name = name
 
         self.embedding = Sequential([
             Embedding(input_dim=input_dim, output_dim=hidden_state_size, input_length=input_len),
@@ -49,7 +45,7 @@ class NumberSequenceEncoder:
                      # activity_regularizer=regularizers.l1(entropy_reg),
                      # activation='softmax')
         model = Model(inputs=inputs, outputs=[lstm])
-        model.compile(optimizer='adam', loss='mean_squared_error'
+        model.compile(optimizer='adam', loss='mean_squared_error'  # TODO: is it mse?
                       # loss='categorical_crossentropy'
                       # TODO might be cool to use the one below (requires different shape in training)
                       # loss='sparse_categorical_crossentropy',
@@ -57,40 +53,30 @@ class NumberSequenceEncoder:
                       # sample_weight_mode="temporal"
                       )
         self.lstm = model
-        self.x = []
-        self.y = []
 
-    def __call__(self, input, **kwargs):
-        return self.encode(input, **kwargs)
+    def __call__(self, *args, **kwargs):
+        return self.encode(*args, **kwargs)
 
-    def append_previous(self):
-        self.x.append(self.x[-1])
-        self.y.append(self.y[-1])
-
-    def encode(self, input, test=False):
+    def encode(self, input, test):
         input = input.reshape(1, -1)
         embedding = self.embedding.predict(input)
         out = self.lstm.predict(embedding)
-        # print('embedd shape', embedding.shape)
-        # print('out    shape', out.shape)
-        if not test:
-            self.x.append(embedding)
-            self.y.append(out)
-        return out
 
-    def train(self, sample_weight):
-        x = np.array(self.x)
-        # print('x what are you', x.shape)
+        # if not test:
+        #     # if self.name =
+        #     self.x.append(embedding)
+        #     self.y.append(out)
+        return out, embedding
+
+    def train(self, x, y, sample_weight):
+
+        # print('shapes in nse x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
         x = x.reshape(-1, self.input_len, self.hidden_state_size)
-        # print('x what are you', x.shape)
+        y = y.reshape(-1, self.hidden_state_size)
 
-        y = np.array(self.y).reshape(-1, self.hidden_state_size)
+        # print('shapes in nse x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
 
-        # print('nseee shapes x {} y {} sw {}'.format(x.shape, y.shape, sample_weight.shape))
-        for xx, yy, ssww in zip(x, y, sample_weight):
-            self.lstm.train_on_batch(xx.reshape(1, -1, self.hidden_state_size), yy.reshape(1, self.hidden_state_size), ssww.reshape(1))
-        # loss = self.lstm.train_on_batch(x, y, sample_weight)
-        # print('losss!!!!!', loss)
+        self.lstm.fit(x, y, sample_weight=sample_weight, verbose=0)
 
 
 class Policy:

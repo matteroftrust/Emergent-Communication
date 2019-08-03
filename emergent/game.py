@@ -59,7 +59,7 @@ class StateBatch:
         hidden_states_odd = hidden_states[1:][::2]
         # print('whats after', hidden_states_even.shape, hidden_states_odd.shape)
 
-        hidden_states_odd.reverse()
+        hidden_states_odd.reverse()  # TODO: wait, why are they reversed?? check with rewards
         hidden_states_even.reverse()
         trajectory_odd.reverse()
         trajectory_even.reverse()
@@ -202,13 +202,16 @@ class Game:
             baseline = np.zeros(2)
 
         for i in range(self.episode_num):
+            self.embeddings = {0: [[], [], []], 1: [[], [], []]}   # context, utterance, proposal
+            self.nse_outs = {0: [[], [], []], 1: [[], [], []]}
+
+            batch = self.next_episode()  # TODO: this is getting ugly
+            baseline = self.reinforce(batch, baseline)
+
             if i % self.test_every == 0:
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 printProgressBar(i, self.episode_num, prefix='Progress:', suffix='Complete {} / {}'.format(i, self.episode_num), length=50)
-
-            batch = self.next_episode()
-            baseline = self.reinforce(batch, baseline)
 
         with open('results/{}.pkl'.format(self.filename), 'wb') as handle:
             pkl.dump(results, handle, protocol=pkl.HIGHEST_PROTOCOL)
@@ -238,24 +241,23 @@ class Game:
         rand_0_or_1 = 0
         proposer = self.agents[rand_0_or_1]
         hearer = self.agents[1 - rand_0_or_1]
-        contexts = {  # context doesnt change during negotiation so can be outside of the loop
-            proposer.id: proposer.context_encoder(np.concatenate((item_pool, proposer.utilities))),
-            hearer.id: hearer.context_encoder(np.concatenate((item_pool, hearer.utilities)))
-        }
+
         negotiations = []
         hidden_states = []
         # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
         termination_true = True  # during the first round an agent can't terminate
 
         for t in range(n):
-            if t > 0: # TODO: any nicer way? do we even need these since the context remains the same?
-                proposer.context_encoder.append_previous()
-                hearer.context_encoder.append_previous()
-            action, hidden_state = proposer.propose(contexts[proposer.id], action.utterance, action.proposal, termination_true=termination_true,
-                                                    test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
+
+            context = np.concatenate((item_pool, proposer.utilities))
+            action, hidden_state, embedding, nse_out = proposer.propose(context, action.utterance, action.proposal, termination_true=termination_true,
+                                                               test=test)  # if communication channel is closed utterance is a dummy
 
             negotiations.append(action)
             hidden_states.append(hidden_state)
+            for i in range(3):
+                self.embeddings[proposer.id][i].append(embedding[i])
+                self.nse_outs[proposer.id][i].append(nse_out[i])
             # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
 
             if not action.is_valid(item_pool):
@@ -295,13 +297,18 @@ class Game:
         agent_1 = self.agents[1]
 
         # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
+        # print('what goes to train000 ', x_1.shape, y_proposal_1.shape, rewards[1].shape)
+        # print('embeddings from 0: {} 1: {} '.format(np.array(self.embeddings[0][2]).shape, np.array(self.embeddings[1][2]).shape))
+        # print('nse  outss from 0: {} 1: {} '.format(np.array(self.nse_outs[0][2]).shape, np.array(self.nse_outs[1][2]).shape))
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
         for agent in self.agents:
-            agent.context_encoder.train(rewards[agent.id])
-            agent.utterance_encoder.train(rewards[agent.id])
-            agent.proposal_encoder.train(rewards[agent.id])
+            # agent.context_encoder.train(rewards[agent.id])
+            agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
+            agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
+            agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
+            # agent.utterance_encoder.train(rewards[agent.id])
 
         rm_ids = []
         # print('iterate opver this malak', y_proposal_0.shape)
