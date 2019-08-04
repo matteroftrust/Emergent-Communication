@@ -303,12 +303,12 @@ class Game:
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
-        for agent in self.agents:
-            # agent.context_encoder.train(rewards[agent.id])
-            agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
-            agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
-            agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
-            # agent.utterance_encoder.train(rewards[agent.id])
+        # for agent in self.agents:
+        #     # agent.context_encoder.train(rewards[agent.id])
+        #     agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
+        #     agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
+        #     agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
+        #     # agent.utterance_encoder.train(rewards[agent.id])
 
         rm_ids = []
         # print('iterate opver this malak', y_proposal_0.shape)

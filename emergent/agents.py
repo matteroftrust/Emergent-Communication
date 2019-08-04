@@ -23,7 +23,6 @@ class Agent:
         self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel, entropy_reg=lambda_proposal)
 
         # NumberSequenceEncoders
-        # TODO: input_dim seems to be wrong in here!
         self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=6, name='context_{}'.format(self.id))  # is this correct?
         self.proposal_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=3, name='proposal_{}'.format(self.id))
         self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=utterance_len, name='utterance_{}'.format(self.id))
