@@ -1,6 +1,7 @@
 from configparser import SafeConfigParser
 import argparse
 import datetime as dt
+import git
 import os
 
 
@@ -97,5 +98,11 @@ if __name__ == '__main__':
     # cProfile.run('game.play()')
     game.play()
     print_status('\n### ### Done. ### ###\n')
-    emergent.settings.save_config(project_settings=project_settings, agent_settings=agent_settings, game_settings=game_settings, filename=filename)
+    try:
+        repo = git.Repo()
+        extra = {'git commit': {'branch': repo.head.object.name_rev, 'commit': repo.head.object.message, 'hash': repo.head.object.hexsha}}
+    except:
+        extra = []
+    emergent.settings.save_config(project_settings=project_settings, agent_settings=agent_settings,
+                                  game_settings=game_settings, extra=extra, filename=filename)
     print('Results should be saved here: results/{}.pkl'.format(filename))
