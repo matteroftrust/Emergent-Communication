@@ -245,13 +245,13 @@ class Game:
         negotiations = []
         hidden_states = []
         # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
-        termination_true = True  # during the first round an agent can't terminate
+        termination = True  # during the first round an agent can't terminate
 
         for t in range(n):
 
             context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state, embedding, nse_out = proposer.propose(context, action.utterance, action.proposal, termination_true=termination_true,
-                                                               test=test)  # if communication channel is closed utterance is a dummy
+            action, hidden_state, embedding, nse_out = proposer.propose(context, action.utterance, action.proposal, termination_true=termination,
+                                                                        test=test)  # if communication channel is closed utterance is a dummy
 
             negotiations.append(action)
             hidden_states.append(hidden_state)
@@ -271,7 +271,7 @@ class Game:
                 return item_pool, negotiations, rewards, n, hidden_states
 
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
-            termination_true = False
+            termination = False
 
         return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states
 
@@ -303,12 +303,12 @@ class Game:
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
-        # for agent in self.agents:
-        #     # agent.context_encoder.train(rewards[agent.id])
-        #     agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
-        #     agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
-        #     agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
-        #     # agent.utterance_encoder.train(rewards[agent.id])
+        for agent in self.agents:
+            # agent.context_encoder.train(rewards[agent.id])
+            agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
+            agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
+            agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
+            # agent.utterance_encoder.train(rewards[agent.id])
 
         rm_ids = []
         # print('iterate opver this malak', y_proposal_0.shape)
