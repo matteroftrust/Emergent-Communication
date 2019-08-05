@@ -26,6 +26,52 @@ class Action:
         return not (self.proposal > item_pool).any()
 
 
+class TrainingBatch:
+    def __init__(self):
+        # inputs
+        self.context = []
+        self.utterance = []
+        self.proposal = []
+        # outputs
+        self.termination_policy = []
+        self.utterance_policy = []
+        self.proposal_policy_0 = []
+        self.proposal_policy_1 = []
+        self.proposal_policy_2 = []
+
+    def append(self, context, utterance, proposal, termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2):
+        # should be lists
+        self.context.extend(context)
+        self.utterance.extend(utterance)
+        self.proposal.extend(proposal)
+        self.termination_policy.extend(termination_policy)
+        self.utterance_policy.extend(utterance_policy)
+        self.proposal_policy_0.extend(proposal_policy_0)
+        self.proposal_policy_1.extend(proposal_policy_1)
+        self.proposal_policy_2.extend(proposal_policy_2)
+
+    def concat(self, batch):
+        self.append(batch.context, batch.utterance, batch.proposal, batch.termination_policy, batch.utterance_policy,
+                    batch.proposal_policy_0, batch.proposal_policy_1, batch.proposal_policy_2)
+
+    def numpize(self):
+        keys = self.__dict__.keys()
+        for key in keys:
+            self.__dict__[key] = np.array(self.__dict__[key])
+
+    def convert_for_training(self):
+        self.numpize()
+        X = [self.context, self.utterance, self.proposal]
+        Y = [self.termination_policy, self.utterance_policy, self.proposal_policy_0, self.proposal_policy_1, self.proposal_policy_2]
+        return X, Y
+
+    @classmethod
+    def batches(cls, ids):
+        batches = {id: cls() for id in ids}
+        return batches
+
+
+
 class StateBatch:
     """
     Stores trajectories and rewards of both agents.
@@ -146,27 +192,27 @@ class StateBatch:
         rewards_0 = flatten(rewards_0)
         rewards_1 = flatten(rewards_1)
 
-        trajectories_0 = flatten(self.trajectories_0)
-        trajectories_1 = flatten(self.trajectories_1)
-
-        y_proposal_0 = np.array([elem.proposal for elem in trajectories_0])
-        y_proposal_1 = np.array([elem.proposal for elem in trajectories_1])
-
-        y_termination_0 = np.array([elem.terminate for elem in trajectories_0])
-        y_termination_1 = np.array([elem.terminate for elem in trajectories_1])
-
-        y_utterance_0 = np.array([elem.utterance for elem in trajectories_0])
-        y_utterance_1 = np.array([elem.utterance for elem in trajectories_1])
-
-        x_0 = flatten(self.hidden_states_0)
-        x_1 = flatten(self.hidden_states_1)
+        # trajectories_0 = flatten(self.trajectories_0)
+        # trajectories_1 = flatten(self.trajectories_1)
+        #
+        # y_proposal_0 = np.array([elem.proposal for elem in trajectories_0])
+        # y_proposal_1 = np.array([elem.proposal for elem in trajectories_1])
+        #
+        # y_termination_0 = np.array([elem.terminate for elem in trajectories_0])
+        # y_termination_1 = np.array([elem.terminate for elem in trajectories_1])
+        #
+        # y_utterance_0 = np.array([elem.utterance for elem in trajectories_0])
+        # y_utterance_1 = np.array([elem.utterance for elem in trajectories_1])
+        #
+        # x_0 = flatten(self.hidden_states_0)
+        # x_1 = flatten(self.hidden_states_1)
 
         # print('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
         # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
         # print('rewardss after\n', rewards)
-        return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
+        return rewards
 
 
 class Game:
@@ -202,11 +248,9 @@ class Game:
             baseline = np.zeros(2)
 
         for i in range(self.episode_num):
-            self.embeddings = {0: [[], [], []], 1: [[], [], []]}   # context, utterance, proposal
-            self.nse_outs = {0: [[], [], []], 1: [[], [], []]}
 
-            batch = self.next_episode()  # TODO: this is getting ugly
-            baseline = self.reinforce(batch, baseline)
+            batch, episode_batches = self.next_episode()  # TODO: this is getting ugly
+            baseline = self.reinforce(batch, baseline, episode_batches)
 
             if i % self.test_every == 0:
                 test_batch = self.tests()  # experiment statistics
@@ -220,6 +264,7 @@ class Game:
         batch = StateBatch()
         # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         # TODO whould be faster to generate data here
+        episode_batches = TrainingBatch.batches([0, 1])
         for i in range(self.batch_size):
             # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()
@@ -227,15 +272,17 @@ class Game:
             for agent in self.agents:
                 agent.generate_util_fun()
 
-            item_pool, negotiations, rewards, n, hidden_states = self.negotiations(item_pool, negotiation_time, test=test)
+            item_pool, negotiations, rewards, n, hidden_states, training_batches = self.negotiations(item_pool, negotiation_time, test=test)
+            for id in range(2):
+                episode_batches[id].concat(training_batches[id])
 
             batch.append(i, n, trajectory=negotiations, rewards=rewards, item_pool=item_pool,
                          hidden_states=hidden_states, utilities=[self.get_agent(0).utilities, self.get_agent(1).utilities])
 
-        return batch
+        return batch, episode_batches
 
     def negotiations(self, item_pool, n, test=False):
-        action = Action(False, self.agents[0].utterance_policy.dummy, self.agents[0].proposal_policy.dummy)  # dummy action TODO how should it be instantiated
+        action = Action(False, self.agents[0].dummy_utterance, self.agents[0].dummy_proposal)  # dummy action TODO how should it be instantiated
         # should it be chosen randomly?
         # rand_0_or_1 = random_integers(0, 1)
         rand_0_or_1 = 0
@@ -244,21 +291,21 @@ class Game:
 
         negotiations = []
         hidden_states = []
-        # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
         termination = True  # during the first round an agent can't terminate
-
+        training_batches = TrainingBatch.batches([0, 1])
+        # print('new negotiation', item_pool)
         for t in range(n):
 
             context = np.concatenate((item_pool, proposer.utilities))
-            action, hidden_state, embedding, nse_out = proposer.propose(context, action.utterance, action.proposal, termination_true=termination,
-                                                                        test=test)  # if communication channel is closed utterance is a dummy
+            context = np.array(context).reshape(1, -1)
+            utterance = np.array(action.utterance, dtype='int').reshape(1, -1)
+            proposal = np.array(action.proposal).reshape(1, -1)
 
+            action, hidden_state, y = proposer.propose(context, utterance, proposal, termination_true=termination, test=test)
+
+            training_batches[proposer.id].append(context, utterance, proposal, *y)
             negotiations.append(action)
             hidden_states.append(hidden_state)
-            for i in range(3):
-                self.embeddings[proposer.id][i].append(embedding[i])
-                self.nse_outs[proposer.id][i].append(nse_out[i])
-            # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
 
             if not action.is_valid(item_pool):
                 break
@@ -268,12 +315,12 @@ class Game:
                 reward_hearer = np.dot(hearer.utilities, negotiations[-2].proposal)
                 rewards = {proposer.id: reward_proposer, hearer.id: reward_hearer}
 
-                return item_pool, negotiations, rewards, n, hidden_states
+                return item_pool, negotiations, rewards, n, hidden_states, training_batches
 
             proposer, hearer = hearer, proposer  # each negotiation round agents switch roles
             termination = False
 
-        return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states
+        return item_pool, negotiations, {0: 0, 1: 0}, n, hidden_states, training_batches
 
     def tests(self):
         """
@@ -281,66 +328,46 @@ class Game:
         """
         test_batch = StateBatch()
         for i in range(5):
-            batch = self.next_episode(test=True)
+            batch, training_batch = self.next_episode(test=True)
             test_batch.concatenate(batch)
         return test_batch
 
-    def reinforce(self, batch, baseline):
-        x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards = batch.convert_for_training(baseline, self.prosocial)
+    def reinforce(self, batch, baseline, episode_batches):
+        # x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1,
+        rewards = batch.convert_for_training(baseline, self.prosocial)
         if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
             return baseline
-        if len(x_0) == 0:
-            print('No data for reinforce')
-            return baseline
-
-        agent_0 = self.agents[0]
-        agent_1 = self.agents[1]
-
-        # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
-        # print('what goes to train000 ', x_1.shape, y_proposal_1.shape, rewards[1].shape)
-        # print('embeddings from 0: {} 1: {} '.format(np.array(self.embeddings[0][2]).shape, np.array(self.embeddings[1][2]).shape))
-        # print('nse  outss from 0: {} 1: {} '.format(np.array(self.nse_outs[0][2]).shape, np.array(self.nse_outs[1][2]).shape))
-        agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
-        agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
+        # if len(x_0) == 0:
+        #     print('No data for reinforce')
+        #     return baseline
 
         for agent in self.agents:
-            # agent.context_encoder.train(rewards[agent.id])
-            agent.context_encoder.train(np.array(self.embeddings[agent.id][0]), np.array(self.nse_outs[agent.id][0]), rewards[agent.id])
-            agent.proposal_encoder.train(np.array(self.embeddings[agent.id][2]), np.array(self.nse_outs[agent.id][2]), rewards[agent.id])
-            agent.utterance_encoder.train(np.array(self.embeddings[agent.id][1]), np.array(self.nse_outs[agent.id][1]), rewards[agent.id])
-            # agent.utterance_encoder.train(rewards[agent.id])
+            x, y = episode_batches[agent.id].convert_for_training()
+            if int(x[0].shape[0]) == 0:
+                continue
+            agent.allinone.train(x, y, rewards[agent.id])
 
-        rm_ids = []
-        # print('iterate opver this malak', y_proposal_0.shape)
+        # rm_ids = []
+        # # print('iterate opver this malak', y_proposal_0.shape)
+        #
+        # # TODO: hey is there a way to do that better?
+        # for i, y in enumerate(y_proposal_0):
+        #     if np.isnan(y[0]):
+        #         rm_ids.append(i)
+        #
+        # y_proposal_0 = np.delete(y_proposal_0, rm_ids, axis=0)
+        # y_utterance_0 = np.delete(y_utterance_0, rm_ids, axis=0)
+        # rewards[0] = np.delete(rewards[0], rm_ids)
+        # x_0 = np.delete(x_0, rm_ids, axis=0)
+        #
+        # rm_ids = []
+        # for i, y in enumerate(y_proposal_1):
+        #     if np.isnan(y[0]):
+        #         rm_ids.append(i)
+        #
+        # y_proposal_1 = np.delete(y_proposal_1, rm_ids, axis=0)
+        # y_utterance_1 = np.delete(y_utterance_1, rm_ids, axis=0)
+        # rewards[1] = np.delete(rewards[1], rm_ids)
+        # x_1 = np.delete(x_1, rm_ids, axis=0)
 
-        # TODO: hey is there a way to do that better?
-        for i, y in enumerate(y_proposal_0):
-            if np.isnan(y[0]):
-                rm_ids.append(i)
-
-        y_proposal_0 = np.delete(y_proposal_0, rm_ids, axis=0)
-        y_utterance_0 = np.delete(y_utterance_0, rm_ids, axis=0)
-        rewards[0] = np.delete(rewards[0], rm_ids)
-        x_0 = np.delete(x_0, rm_ids, axis=0)
-
-        rm_ids = []
-        for i, y in enumerate(y_proposal_1):
-            if np.isnan(y[0]):
-                rm_ids.append(i)
-
-        y_proposal_1 = np.delete(y_proposal_1, rm_ids, axis=0)
-        y_utterance_1 = np.delete(y_utterance_1, rm_ids, axis=0)
-        rewards[1] = np.delete(rewards[1], rm_ids)
-        x_1 = np.delete(x_1, rm_ids, axis=0)
-        # print('what goes to train000 ', x_0.shape, y_proposal_0.shape, rewards[0].shape)
-        # print('what goes to train111 ', x_1.shape, y_proposal_1.shape, rewards[1].shape)
-
-        agent_0.proposal_policy.train(x_0, y_proposal_0, rewards[0])
-        agent_1.proposal_policy.train(x_1, y_proposal_1, rewards[1])
-
-        agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
-        agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
-
-        # TODO:
-        # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
         return baseline

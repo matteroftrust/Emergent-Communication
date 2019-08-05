@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 
 from .game import Action
-from .models import CoreLayer, NumberSequenceEncoder, TerminationPolicy, ProposalPolicy, UtterancePolicy
+from .models import AllInOneModel
 
 
 class Agent:
@@ -15,20 +15,9 @@ class Agent:
         self.id = next(self.id_generator)
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
+        self.utterance_len = utterance_len
 
-        # policies
-        self.termination_policy = TerminationPolicy(hidden_state_size, entropy_reg=lambda_termination)
-        self.utterance_policy = UtterancePolicy(hidden_state_size=hidden_state_size, is_on=linguistic_channel,
-                                                vocab_size=vocab_size, utterance_len=utterance_len, entropy_reg=lambda_utterance)
-        self.proposal_policy = ProposalPolicy(hidden_state_size=hidden_state_size, is_on=proposal_channel, entropy_reg=lambda_proposal)
-
-        # NumberSequenceEncoders
-        self.context_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=6, name='context_{}'.format(self.id))  # is this correct?
-        self.proposal_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=3, name='proposal_{}'.format(self.id))
-        self.utterance_encoder = NumberSequenceEncoder(input_dim=vocab_size, input_len=utterance_len, name='utterance_{}'.format(self.id))
-
-        # feedforward layer that takes (h_c, h_m, h_p) and returns hidden_state
-        self.core_layer = CoreLayer()
+        self.allinone = AllInOneModel(hidden_state_size, 6, 6, 3)
 
     def __str__(self):
         return 'agent {}'.format(self.id)
@@ -37,6 +26,14 @@ class Agent:
     def create_agents(self, n, *args, **kwargs):
         agents = [Agent(*args, **kwargs) for _ in range(n)]
         return agents
+
+    @property
+    def dummy_utterance(self):
+        return np.ones(self.utterance_len)
+
+    @property
+    def dummy_proposal(self):
+        return np.ones(3)
 
     def generate_util_fun(self):
         """
@@ -49,29 +46,13 @@ class Agent:
                 return out
 
     def propose(self, context, utterance, proposal, test, termination_true=False):
-        (hc, hc_embedding), (hp, hp_embedding), (hm, hm_embedding) = self.context_encoder(context, test=test), self.proposal_encoder(proposal, test=test), self.utterance_encoder(utterance, test=test)
-        input = np.concatenate([hc, hm, hp])
-        input = input.reshape(1, -1)
-        hidden_state = self.core_layer(input)
-        # if self.id == 1:
-        #     print('this is hs {}'.format(hidden_state[0][0:6]))
+        termination, utterance, proposal, y = self.allinone.predict(context, utterance, proposal, test=test)
 
         if termination_true:
             termination = False
-        else:
-            termination = self.termination_policy(hidden_state, test=test)
-        # if termination:
-        #     action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
-        # TODO: if atermination == True then we dont need utterance and proposal but what about training?
-        if not termination:
-            utterance = self.utterance_policy(hidden_state)  # should test also be passed here?
-            proposal = self.proposal_policy(hidden_state)  # should test also be passed here?
-        else:
-            utterance = None
-            proposal = np.array([np.nan, np.nan, np.nan])
+        hidden_state = None
 
-        hidden_state = hidden_state.reshape(-1)
+        # print('out', termination, utterance, proposal)
+        action = Action(terminate=termination, utterance=np.array(utterance), proposal=np.array(proposal), id=self.id)
 
-        action = Action(terminate=termination, utterance=utterance, proposal=proposal, id=self.id)
-
-        return action, hidden_state, [hc_embedding, hm_embedding, hp_embedding], [hc, hm, hp]
+        return action, hidden_state, y

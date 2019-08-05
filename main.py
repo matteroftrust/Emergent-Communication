@@ -88,7 +88,7 @@ if __name__ == '__main__':
     print_all('agents summary')
     for agent in agents:
         print('\nsummary {}'.format(agent.id))
-        print(agent.core_layer.model.summary())
+        # print(agent.core_layer.model.summary())
 
     print_status('\n### Game initialization. ###\n')
     game = emergent.Game(agents=agents, **game_settings.as_dict())
