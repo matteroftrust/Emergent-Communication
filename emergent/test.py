@@ -1,6 +1,6 @@
 from .agents import Agent
 from .game import Game
-from .models import TerminationPolicy, ProposalPolicy, UtterancePolicy, NumberSequenceEncoder, CoreLayer
+from .models import AllInOneModel
 
 from keras.layers import Dense, Activation
 from keras.models import Sequential
