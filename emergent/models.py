@@ -8,7 +8,10 @@ from tensorflow.python.keras.layers.embeddings import Embedding
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.utils import to_categorical
 from keras import backend as K
-
+import tensorflow as tf
+config = tf.ConfigProto( device_count = {'GPU': 1 , 'CPU': 56} )
+sess = tf.Session(config=config)
+K.set_session(sess)
 # from keras.utils import plot_model plot_model(model, to_file='model.png')  !!!!!!!!
 
 
@@ -96,7 +99,7 @@ class AllInOneModel:
 
     def train(self, x, y, sw):
 
-        self.model.fit(x, y, sample_weight=[sw] * 5)
+        self.model.fit(x, y, sample_weight=[sw] * 5, verbose=1)
 
         # dummy_input = Input(tensor=self.dummy_symbol)
         # return dummy_input
