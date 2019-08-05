@@ -71,7 +71,6 @@ class TrainingBatch:
         return batches
 
 
-
 class StateBatch:
     """
     Stores trajectories and rewards of both agents.
@@ -100,10 +99,8 @@ class StateBatch:
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
         trajectory_odd = trajectory[1:][::2]
 
-        # print('what comes to append', len(hidden_states))
         hidden_states_even = hidden_states[::2]
         hidden_states_odd = hidden_states[1:][::2]
-        # print('whats after', hidden_states_even.shape, hidden_states_odd.shape)
 
         hidden_states_odd.reverse()  # TODO: wait, why are they reversed?? check with rewards
         hidden_states_even.reverse()
@@ -211,7 +208,6 @@ class StateBatch:
         # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
 
         rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
-        # print('rewardss after\n', rewards)
         return rewards
 
 
@@ -262,7 +258,6 @@ class Game:
 
     def next_episode(self, test=False):
         batch = StateBatch()
-        # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         # TODO whould be faster to generate data here
         episode_batches = TrainingBatch.batches([0, 1])
         for i in range(self.batch_size):
@@ -333,13 +328,9 @@ class Game:
         return test_batch
 
     def reinforce(self, batch, baseline, episode_batches):
-        # x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1,
         rewards = batch.convert_for_training(baseline, self.prosocial)
         if sum(rewards[0]) == 0 or sum(rewards[1]) == 0:  # TODO this is wrong but it breaks if rewards are 0 and gradient vanishes
             return baseline
-        # if len(x_0) == 0:
-        #     print('No data for reinforce')
-        #     return baseline
 
         for agent in self.agents:
             x, y = episode_batches[agent.id].convert_for_training()

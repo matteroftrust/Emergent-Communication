@@ -52,7 +52,6 @@ class Agent:
             termination = False
         hidden_state = None
 
-        # print('out', termination, utterance, proposal)
         action = Action(terminate=termination, utterance=np.array(utterance), proposal=np.array(proposal), id=self.id)
 
         return action, hidden_state, y

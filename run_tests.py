@@ -10,8 +10,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--filename', dest='filename')
-    parser.add_argument('-p', '--prompt', dest='prompt')
-    parser.set_defaults(filename=str(dt.datetime.today()).replace(' ', '').replace(':', '').replace('.', ''), prompt='status')
+    parser.set_defaults(filename=str(dt.datetime.today()).replace(' ', '').replace(':', '').replace('.', ''))
     args = parser.parse_args()
     filename = args.__dict__['filename']
 
