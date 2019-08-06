@@ -13,7 +13,13 @@ virtualenv env
 source env/bin/activate
 ```
 
-2. Import all required packages using `pip install`.
+2. Clone git repository.
+
+```
+git clone https://github.com/matteroftrust/Emergent-Communication.git
+```
+
+3. Import all required packages using `pip install`.
 
 ```
 pip install -r requirements.txt
@@ -21,7 +27,7 @@ pip install -r requirements.txt
 
 If `tensorflow-gpu` cannot be installed try `tensorflow`.
 
-3. Run simulation
+4. Run simulation
 
 ```
 python main.py    [-e] number of episodes
@@ -30,7 +36,7 @@ python main.py    [-e] number of episodes
                   [-c] communication channels: proposal, linguistic (comma separated format)
 ```
 
-4. Simulation results should be saved in `\results` folder. To run data processing in project directory run:
+5. Simulation results should be saved in `\results` folder. To run data processing in project directory run:
 
 ```
 python analyze.py [-f] .pkl filename saved in \results.
