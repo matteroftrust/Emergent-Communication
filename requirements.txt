@@ -1,6 +1,8 @@
+gitpython
 matplotlib
 numpy
 keras
 scipy
 seaborn
-tensorflow
+tensorflow-gpu==1.13.1
+pydot

@@ -1,8 +1,10 @@
 from .settings import load_settings
 from numpy.random import random_integers, poisson
-from keras import backend as K
+from tensorflow.python.keras import backend as K
 
 import numpy as np
+from scipy.stats import zscore
+
 
 project_settings, _, _ = load_settings()
 
@@ -17,47 +19,22 @@ class Results:
         self.item_pools
 
 
-def generate_item_pool(batch_size):
-    return random_integers(0, 5, (batch_size, 3))  # on average bout 0.46% are empty which is a bit wrong
+def generate_item_pool():
+    while True:
+        item_pool = random_integers(0, 5, 3)
+        if item_pool.sum():
+            return item_pool
 
 
-def generate_negotiation_time(batch_size):
+def generate_negotiation_time():
     """
     Generate negotiation time ampled from truncated Poisson distribution.
+    TODO it should be truncated Poisson but this one is not I guess! Needs to be checked!
     """
-    # TODO any faster way?
-    out = poisson(7, batch_size)
-    mask = (out < 4) + (out > 10)
-    while sum(mask) != 0:
-        out[mask] = poisson(7, sum(mask))
-        mask = (out < 4) + (out > 10)
-    return out
-
-
-def generate_util_fun(batch_size):
-    out = random_integers(0, 10, (batch_size, 3))
-    mask = out == np.zeros(3)
-    mask = mask.sum(axis=1) == 3
-    while sum(mask) != 0:
-        out[mask] = random_integers(0, 10, (sum(mask), 3))
-        mask = out == np.zeros(3)
-        mask = mask.sum(axis=1) == 3
-    return out
-    # while True:
-    #     out = random_integers(0, 10, 3)
-    #     if list(out) != [0, 0, 0]:
-    #         self.utilities = out
-    #         return out
-
-
-def print_all(*args, **kwargs):
-    if project_settings.prompt == 'all':
-        print(*args, **kwargs)
-
-
-def print_status(*args, **kwargs):
-    if project_settings.prompt in ['status', 'all']:
-        print(*args, **kwargs)
+    while True:
+        out = poisson(7, 1)
+        if out >= 4 and out <= 10:
+            return int(out)
 
 
 def validation(func):
@@ -84,18 +61,19 @@ def discount(r, gamma=0.99, standardize=False):
     return discounted
 
 
+def discounts(r, length, gamma=0.99):
+    return [r * (gamma ** i) for i in range(length)]
+
+
 def flatten(arr):
     return np.array([elem for sublist in arr for elem in sublist])
 
 
-def unpack(arr):
-    """
-    unpack values stored in HiddenState.
-    """
-    new_arr = []
-    for hs in arr:
-        new_arr.append(hs.hs)
-    return np.array(new_arr)
+def zscore2(arr):
+    zscored = zscore(arr)
+    if np.isnan(zscored).any():
+        return arr
+    return zscored
 
 
 def print_trajectory(t, name):
@@ -105,6 +83,8 @@ def print_trajectory(t, name):
 
 
 def convert_to_sparse(arr, n):
+    # TODO: this should be optimized
+    arr = arr.astype(int)
     out = np.zeros((len(arr), n), dtype=int)
     for i, row in enumerate(out):
         row[arr[i]] = 1
@@ -120,3 +100,26 @@ def get_weight_grad(model, inputs, outputs):
     x, y, sample_weight = model._standardize_user_data(inputs, outputs)
     output_grad = f(x + y + sample_weight)
     return output_grad
+
+
+# Print iterations progress
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+    # taken from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end='\r')
+    # Print New Line on Complete
+    if iteration == total:
+        print()

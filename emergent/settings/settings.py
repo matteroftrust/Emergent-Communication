@@ -1,5 +1,18 @@
 from configparser import SafeConfigParser
 from datetime import datetime as dt
+import json
+
+
+def save_config(project_settings, agent_settings, game_settings, filename, extra=None):
+
+    for_serialization = {
+        'extra': extra,
+        'game settings': game_settings.as_dict(),
+        'project settings': project_settings.as_dict(),
+        'agent settings': agent_settings.as_dict()
+    }
+    with open('results/{}_config.txt'.format(filename), 'w') as file:
+        file.write(json.dumps(for_serialization, sort_keys=True, indent=4))
 
 
 def load_settings(config_file='config.ini'):
@@ -30,8 +43,7 @@ class ProjectSettings(Settings):
     General project settings.
     """
 
-    def __init__(self, prompt='status', validation=True, name=None, acceleration=False):
-        self.prompt = prompt
+    def __init__(self, validation=True, name=None, acceleration=False):
         self.acceleration = acceleration
         self.validation = [True, False][validation in ['False', False]]
         if name:
@@ -39,7 +51,6 @@ class ProjectSettings(Settings):
         else:
             now = dt.now()
             self.experiment_name = '{}_experiment'.format(str(now))
-        print('experiment nameee', self.experiment_name)
 
     def __str__(self):
         return 'Project ' + super().__str__()
@@ -82,12 +93,14 @@ class GameSettings(Settings):
     Game specific settings.
     """
 
-    def __init__(self, batch_size=2, test_batch_size=5, episode_num=2, item_num=3, prosocial=False):
+    def __init__(self, filename='', batch_size=2, test_batch_size=5, episode_num=2, item_num=3, prosocial=False, test_every=50):
         self.batch_size = int(batch_size)
         self.test_batch_size = test_batch_size
         self.episode_num = int(episode_num)
         self.item_num = item_num
         self.prosocial = [True, False][prosocial in ['False', False]]
+        self.test_every = int(test_every)
+        self.filename = filename or str(dt.today()).replace(' ', '').replace(':', '').replace('.', '')
 
     def __str__(self):
         return 'Game ' + super().__str__()

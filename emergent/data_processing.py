@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from emergent.game import HiddenState
-
 sns.set(style="darkgrid")
 
 
@@ -22,10 +20,7 @@ def run_analysis(filename):
 
     for state_batch in data:
         state_batch = state_batch[1]
-        # sb_rewards_0 = list(itertools.chain(*state_batch.rewards_0))
-        # sb_rewards_1 = list(itertools.chain(*state_batch.rewards_1))
-        # mean_rewards_0 = np.mean(sb_rewards_0)
-        # mean_rewards_1 = np.mean(sb_rewards_1)
+
         compute_batch(state_batch)
 
         rewards_0.append(state_batch.mean_st_reward_0)
@@ -54,6 +49,9 @@ def compute_batch(batch):
     except:
         numpize(batch)
 
+    batch.rewards_0 = batch.rewards[0]
+    batch.rewards_1 = batch.rewards[1]
+
     batch.item_pools = batch.item_pools.reshape(-1, 3)
     batch.rewards_0 = batch.rewards_0.reshape(-1)
     batch.rewards_1 = batch.rewards_1.reshape(-1)
@@ -61,11 +59,21 @@ def compute_batch(batch):
     batch.utilities_1 = batch.utilities_1.reshape(-1, 3)
     batch.max_rewards_0 = np.sum(batch.item_pools * batch.utilities_0, axis=1)
     batch.max_rewards_1 = np.sum(batch.item_pools * batch.utilities_1, axis=1)
-    batch.st_rewards_0 = batch.rewards_0 / batch.max_rewards_0
-    batch.st_rewards_1 = batch.rewards_1 / batch.max_rewards_1
+
+    batch.st_rewards_0 = np.nan_to_num(batch.rewards_0 / batch.max_rewards_0, 0)  # if item_pools * utilities = [0, 0, 0] then this breaks so it shouldt be 0 but 1
+    batch.st_rewards_1 = np.nan_to_num(batch.rewards_1 / batch.max_rewards_1, 0)
+
     is_nan_0 = np.isnan(batch.st_rewards_0)
     is_nan_1 = np.isnan(batch.st_rewards_1)
     batch.st_rewards_0[is_nan_0] = 0
     batch.st_rewards_1[is_nan_1] = 0
+
     batch.mean_st_reward_0 = np.mean(batch.st_rewards_0)
     batch.mean_st_reward_1 = np.mean(batch.st_rewards_1)
+
+    batch.trajectory_len = []
+    for t1, t2 in zip(batch.trajectories_0, batch.trajectories_1):
+        for tt1, tt2 in zip(t1, t2):
+            batch.trajectory_len.append(len(tt1) + len(tt2))
+
+    batch.avg_trajectory_len = np.mean(batch.trajectory_len)
