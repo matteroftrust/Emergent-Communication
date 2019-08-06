@@ -60,7 +60,7 @@ def compute_batch(batch):
     batch.max_rewards_0 = np.sum(batch.item_pools * batch.utilities_0, axis=1)
     batch.max_rewards_1 = np.sum(batch.item_pools * batch.utilities_1, axis=1)
 
-    batch.st_rewards_0 = np.nan_to_num(batch.rewards_0 / batch.max_rewards_0, 0)
+    batch.st_rewards_0 = np.nan_to_num(batch.rewards_0 / batch.max_rewards_0, 0)  # if item_pools * utilities = [0, 0, 0] then this breaks so it shouldt be 0 but 1
     batch.st_rewards_1 = np.nan_to_num(batch.rewards_1 / batch.max_rewards_1, 0)
 
     is_nan_0 = np.isnan(batch.st_rewards_0)

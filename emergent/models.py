@@ -18,6 +18,7 @@ TODO:
 - utterance policy to be fixed maybe with RepeatVector https://stackoverflow.com/questions/51749404/how-to-connect-lstm-layers-in-keras-repeatvector-or-return-sequence-true
 """
 
+trainable = True
 
 class AllInOneModel:
     def __init__(self, hidden_state_size, context_len, utterance_len, proposal_len, term_entropy=.05, prop_entropy=.05, utter_entropy=.001):
@@ -29,19 +30,19 @@ class AllInOneModel:
         utterance_embedding = Embedding(input_dim=11, output_dim=hidden_state_size, trainable=False, name='utterance_embedd')(utterance_input)
         proposal_embedding = Embedding(input_dim=11, output_dim=hidden_state_size, trainable=False, name='proposal_embedd')(proposal_input)
 
-        context_lstm = LSTM(units=hidden_state_size, name='context_lstm')(context_embedding)
-        utterance_lstm = LSTM(units=hidden_state_size, name='utterance_lstm')(utterance_embedding)
-        proposal_lstm = LSTM(units=hidden_state_size, name='proposal_lstm')(proposal_embedding)
+        context_lstm = LSTM(units=hidden_state_size, trainable=trainable, name='context_lstm')(context_embedding)
+        utterance_lstm = LSTM(units=hidden_state_size, trainable=trainable, name='utterance_lstm')(utterance_embedding)
+        proposal_lstm = LSTM(units=hidden_state_size, trainable=trainable, name='proposal_lstm')(proposal_embedding)
 
         merged = concatenate([context_lstm, utterance_lstm, proposal_lstm])
-        hidden_state = Dense(hidden_state_size, activation='relu', name='hidden_state')(merged)
+        hidden_state = Dense(hidden_state_size, activation='relu', trainable=trainable, name='hidden_state')(merged)
 
         termination_policy = Dense(1, activation='sigmoid', name='termination_policy',
                                    activity_regularizer=regularizers.l1(term_entropy))(hidden_state)
 
         dummy_input = Lambda(self.dummy_symbol_input)(hidden_state)
         utterance_policy = Dense(66, name='utterance_policy', activation='softmax',
-                                 activity_regularizer=regularizers.l1(utter_entropy))(dummy_input)
+                                 activity_regularizer=regularizers.l1(utter_entropy), trainable=False,)(dummy_input)
 
         proposal_policy_0 = Dense(6, activation='softmax', name='proposal_policy_0',
                                   activity_regularizer=regularizers.l1(prop_entropy))(hidden_state)
