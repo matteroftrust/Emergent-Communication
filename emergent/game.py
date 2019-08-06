@@ -260,6 +260,14 @@ class Game:
         batch = StateBatch()
         # TODO whould be faster to generate data here
         episode_batches = TrainingBatch.batches([0, 1])
+
+        # active_ids = np.ones(self.batch_size)
+        # batches =
+        # for i in range(10):
+
+
+
+
         for i in range(self.batch_size):
             # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()

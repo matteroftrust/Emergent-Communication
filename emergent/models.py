@@ -20,6 +20,7 @@ TODO:
 
 trainable = True
 
+
 class AllInOneModel:
     def __init__(self, hidden_state_size, context_len, utterance_len, proposal_len, term_entropy=.05, prop_entropy=.05, utter_entropy=.001):
         context_input = Input(batch_shape=(1, context_len), name='context_input')
@@ -80,13 +81,59 @@ class AllInOneModel:
         c = K.constant(self.dummy_symbol)
         return c
 
-    def predict(self, context, utterance, proposal, test=False):
+    def predict(self, context, utterance, proposal, test=False, batch=False):
         # print('what came?', context, utterance, proposal)
-        termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2 = self.model.predict([context, utterance, proposal])
-        y = [termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2]
+        tp, up, pp0, pp1, pp2 = self.model.predict([context, utterance, proposal])
+
+        if batch:
+            y_list = []
+            termination_list = []
+            utterance_list = []
+            proposal_list = []
+
+            for termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2 in zip(tp, up, pp0, pp1, pp2):
+                y = [termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2]
+                print('whats termination_policy', termination_policy)
+                termination_policy = float(termination_policy)
+                # print('what was predicted', termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2)
+                # termination_policy = float(termination_policy)
+                if test:
+                    termination = [True, False][termination_policy < 0.5]
+                else:
+                    termination = np.random.choice([True, False], p=[termination_policy, 1 - termination_policy])
+                utterance = np.zeros(6)
+                proposal = []
+                for distribution in [proposal_policy_0, proposal_policy_1, proposal_policy_2]:
+                    if test:
+                        single_proposal = distribution.argmax()
+                    else:
+                        single_proposal = np.random.choice(np.arange(6), p=distribution.reshape(-1))
+                    proposal.append(single_proposal)
+                sparse_proposal = convert_to_sparse(np.array(proposal), 6)
+
+                y = [np.array([termination], dtype=int), utterance_policy, sparse_proposal[0], sparse_proposal[1], sparse_proposal[2]]
+                for i in range(len(y)):
+                    y[i] = y[i].reshape(1, -1)
+
+                termination_list.append(termination)
+                utterance_list.append(utterance)
+                proposal_list.append(proposal)
+
+                y_list.append(y)
+
+            return termination_list, utterance_list, proposal_list, y_list
+
+
 
         # print('what was predicted', termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2)
+        # termination_policy = float(termination_policy)
+
+        termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2 = tp, up, pp0, pp1, pp2
+        print('whats termination_policy', termination_policy)
         termination_policy = float(termination_policy)
+
+        y = [termination_policy, utterance_policy, proposal_policy_0, proposal_policy_1, proposal_policy_2]
+
         if test:
             termination = [True, False][termination_policy < 0.5]
         else:
