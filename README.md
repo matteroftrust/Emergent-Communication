@@ -1,7 +1,10 @@
 # Emergent-Communication
 
 
-1. Make sure `Python 3` and `pip` is installed.
+1. Make sure `Python 3` and `pip` is installed. Install `virtualenv`.
+```
+pip install virtualenv
+```
 
 1. Create virtual environment and activate.
 
