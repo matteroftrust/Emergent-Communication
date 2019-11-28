@@ -3,7 +3,7 @@ import numpy as np
 from .utils import validation, convert_to_sparse
 
 from tensorflow.python.keras import Input, regularizers, optimizers
-from tensorflow.python.keras.layers import Dense, Activation, LSTM, Flatten
+from tensorflow.python.keras.layers import Dense, Activation, LSTM
 from tensorflow.python.keras.layers.embeddings import Embedding
 # from keras.layers.recurrent import LSTM
 from tensorflow.python.keras.models import Sequential, Model
@@ -170,7 +170,6 @@ class ProposalPolicy(Policy):
         if self.is_on:
             for i in range(self.item_num):
                 y = convert_to_sparse(y[:, i], 6)
-                # print('whats there for training in proposal policy??? \n', x.shape, y.shape, sample_weight.shape)
                 self.models[i].train_on_batch(x, y, sample_weight=sample_weight)
 
     def get_weights(self):
@@ -237,7 +236,7 @@ class UtterancePolicy(Policy):
         return utterance
 
     def train(self, x, y, sample_weight):
-        # TODO: why it doesnt work on a batch?!?!!!
+        # TODO: why it doesnt work on a batch?
         # TODO: x can be skipped, right?
         if self.is_on:
             # X = []
@@ -256,7 +255,6 @@ class UtterancePolicy(Policy):
                     # X.append(xxx)
                     # Y.append(yyy)
                     # SW.append(ssww)
-                    # print('shapesss', xxx.shape, np.array(yyy).shape, ssww.shape)
                     self.model.train_on_batch(xxx, np.array(yyy), sample_weight=ssww)
             # X = np.array(X)
             # Y = np.array(Y)
@@ -269,9 +267,5 @@ class UtterancePolicy(Policy):
             # X = np.array(X).reshape(-1, 1, 1)
             # Y = np.array(Y).reshape(-1, 11)
             # SW = np.array(SW).reshape(-1)
-            # print('what are the shapes? X {}, Y {}, SW {}'.format(X.shape, Y.shape, SW.shape))
-            # print('x', X[1])
-            # print('y', Y[1])
-            # print('sw', SW[1])
             # self.model.train_on_batch(X, Y, sample_weight=SW)
             # self.model.train_on_batch(X, Y, sample_weight=SW)

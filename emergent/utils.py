@@ -1,9 +1,9 @@
 from .settings import load_settings
-from numpy.random import random_integers, poisson
-from tensorflow.python.keras import backend as K
 
-import numpy as np
+from numpy.random import random_integers, poisson
 from scipy.stats import zscore
+from tensorflow.python.keras import backend as K
+import numpy as np
 
 
 project_settings, _, _ = load_settings()
@@ -26,7 +26,6 @@ def generate_item_pool():
 def generate_negotiation_time():
     """
     Generate negotiation time ampled from truncated Poisson distribution.
-    TODO it should be truncated Poisson but this one is not I guess! Needs to be checked!
     """
     while True:
         out = poisson(7, 1)
@@ -107,7 +106,6 @@ def get_weight_grad(model, inputs, outputs):
     return output_grad
 
 
-# Print iterations progress
 def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     # taken from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     """

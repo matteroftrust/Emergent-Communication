@@ -1,9 +1,7 @@
-from numpy.random import random_integers
 import numpy as np
 import pickle as pkl
-from datetime import datetime as dt
 
-from .utils import generate_item_pool, generate_negotiation_time, print_all, print_status, discounts, flatten, zscore2, printProgressBar
+from .utils import generate_item_pool, generate_negotiation_time, discounts, flatten, zscore2, printProgressBar
 
 
 class Action:
@@ -54,10 +52,8 @@ class StateBatch:
         trajectory_even = trajectory[::2]  # even and odd indexwise so arr[0] is even and arr[1] odd
         trajectory_odd = trajectory[1:][::2]
 
-        # print('what comes to append', len(hidden_states))
         hidden_states_even = hidden_states[::2]
         hidden_states_odd = hidden_states[1:][::2]
-        # print('whats after', hidden_states_even.shape, hidden_states_odd.shape)
 
         hidden_states_odd.reverse()
         hidden_states_even.reverse()
@@ -104,8 +100,6 @@ class StateBatch:
             self.__dict__[key] = np.array(self.__dict__[key])
 
     def convert_for_training(self, baseline, prosocial):
-        # TODO: this whole code needs a person equipped with a brain
-
         rewards = self.rewards.copy()
         rewards_0 = []
         rewards_1 = []
@@ -161,11 +155,7 @@ class StateBatch:
         x_0 = flatten(self.hidden_states_0)
         x_1 = flatten(self.hidden_states_1)
 
-        # print('what is the shape of x0 {} yterm0 {} yprop0 {} r0 {}'.format(x_0.shape, y_termination_0.shape, y_proposal_0.shape, rewards_0.shape))
-        # print('what is the shape of x1 {} yterm1 {} yprop0 {} r1 {}'.format(x_1.shape, y_termination_1.shape, y_proposal_1.shape, rewards_1.shape))
-
-        rewards = [rewards_0, rewards_1]  # TODO should be change if prosocial
-        # print('rewardss after\n', rewards)
+        rewards = [rewards_0, rewards_1]  # TODO should be changed if prosocial
         return x_0, x_1, y_termination_0, y_termination_1, y_proposal_0, y_proposal_1, y_utterance_0, y_utterance_1, rewards
 
 
@@ -174,7 +164,7 @@ class Game:
     def __init__(self, agents, batch_size, test_batch_size, episode_num, filename, item_num=3, prosocial=False, test_every=50):
         self.rounds = []
         self.i = 0
-        self.agents = agents  # list of agents
+        self.agents = agents
         self.stats = None
         self.scores = np.zeros(len(self.agents))
 
@@ -203,14 +193,12 @@ class Game:
 
         for i in range(self.episode_num):
             # weights.append(self.agents[0].termination_policy.model.get_weights())
-            if i % self.test_every == 0:  # TODO remember it should be 50!
+            if i % self.test_every == 0:  # TODO it should be 50!
                 test_batch = self.tests()  # experiment statistics
                 results.append([i, test_batch])
                 printProgressBar(i, self.episode_num, prefix='Progress:', suffix='Complete {} / {}'.format(i, self.episode_num), length=50)
 
-            # print_status('\n### Starting episode {} out of {} ###\n'.format(i, self.episode_num))
             batch = self.next_episode()
-            # print_all('match_item_pool: {} \n batch_negotiations: {} \n batch_rewards'.format(batch.item_pool, batch_negotiations, batch_rewards))
 
             baseline = self.reinforce(batch, baseline)
         with open('results/{}.pkl'.format(self.filename), 'wb') as handle:
@@ -218,10 +206,8 @@ class Game:
 
     def next_episode(self, test=False):
         batch = StateBatch()
-        # print('proposal policy weights', self.agents[0].proposal_policy.models[0].get_weights()[:5])
         # TODO whould be faster to generate data here
         for i in range(self.batch_size):
-            # print_status('Starting batch {}'.format(i))
             # beginning of new round. item pool and utility funcions generation
             item_pool = generate_item_pool()
             negotiation_time = generate_negotiation_time()
@@ -246,7 +232,6 @@ class Game:
         hearer_context = hearer.context_encoder(np.concatenate((item_pool, hearer.utilities)))
         negotiations = []
         hidden_states = []
-        # print_status('\nnew negotiation round:\nitem_pool: {}\nagent {} utility {}\nagent {} utility {}\n'.format(item_pool, proposer.id, proposer.utilities, hearer.id, hearer.utilities))
         termination_true = True
         for t in range(n):
 
@@ -254,7 +239,6 @@ class Game:
                                                     test=test, item_pool=item_pool)  # if communication channel is closed utterance is a dummy
             negotiations.append(action)
             hidden_states.append(hidden_state)
-            # print('Round {}:\nproposer {} proposal {} termination {} utterance {}'.format(t, action.proposed_by, action.proposal, action.terminate, action.utterance))
 
             if not action.is_valid(item_pool):
                 break
@@ -293,8 +277,6 @@ class Game:
         agent_0 = self.agents[0]
         agent_1 = self.agents[1]
 
-        # print('what goes to train000 ', x_0.shape, y_termination_0.shape)
-        # print('what goes to train111 ', x_1.shape, y_termination_1.shape)
         agent_0.termination_policy.train(x_0, y_termination_0, rewards[0])
         agent_1.termination_policy.train(x_1, y_termination_1, rewards[1])
 
@@ -303,8 +285,6 @@ class Game:
 
         agent_0.utterance_policy.train(x_0, y_utterance_0, rewards[0])
         agent_1.utterance_policy.train(x_1, y_utterance_1, rewards[1])
-
-        # print('Reinforce done!!!!!')
 
         # TODO:
         # for core model training it would be smater to move encoders to the model so we dont have to store 1500 values each round
